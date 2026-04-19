@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   Users, Trophy, Swords, Zap, Settings, Info, Save, Trash2, ArrowUp, ArrowDown, 
-  RotateCcw, Plus, Edit, X, LayoutDashboard, Database, Activity, Search, Award, ChevronLeft, PlusCircle, Filter, BookOpen, Star, Eye, EyeOff, Check, Play, Archive, Calendar, Globe, FileText
+  RotateCcw, Plus, Edit, X, LayoutDashboard, Database, Activity, Search, Award, ChevronLeft, PlusCircle, Filter, BookOpen, Star, Eye, EyeOff, Check, Play, Archive, Calendar, Globe, FileText, QrCode
 } from 'lucide-react';
 
 interface Achievement {
