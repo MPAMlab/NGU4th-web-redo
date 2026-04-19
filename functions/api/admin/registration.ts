@@ -27,7 +27,7 @@ export const onRequest: PagesFunction<{
   }
 
   if (request.method === "POST") {
-    const { targetKindeId, action, team } = await request.json() as any;
+    const { targetKindeId, action, team, mapping } = await request.json() as any;
     
     if (action === 'set_team') {
       await env.DB.prepare("UPDATE ngu4th_members SET is_registered = 1, team = ? WHERE kinde_id = ?")
@@ -35,6 +35,11 @@ export const onRequest: PagesFunction<{
     } else if (action === 'remove_registration') {
       await env.DB.prepare("UPDATE ngu4th_members SET is_registered = 0, team = NULL WHERE kinde_id = ?")
         .bind(targetKindeId).run();
+    } else if (action === 'reorder') {
+      const statements = mapping.map((m: any) => 
+        env.DB.prepare("UPDATE ngu4th_members SET team_order = ? WHERE kinde_id = ?").bind(m.order, m.id)
+      );
+      await env.DB.batch(statements);
     }
 
     return new Response(JSON.stringify({ success: true }), {

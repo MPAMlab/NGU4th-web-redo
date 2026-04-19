@@ -113,9 +113,9 @@ export const LiveView = () => {
              <>
                <span className="text-xs font-black text-neutral-500 uppercase tracking-widest">当前场上选手 ON STAGE</span>
                <div className="flex flex-col gap-2">
-                 <div className="text-5xl font-black text-red-500 italic tracking-tighter uppercase">{data.activeMatch.red_name}</div>
+                 <div className="text-5xl font-black text-red-500 italic tracking-tighter uppercase">{data.activeMatch.red_player_name}</div>
                  <div className="text-2xl font-black text-neutral-600 italic uppercase">Versus</div>
-                 <div className="text-5xl font-black text-blue-500 italic tracking-tighter uppercase">{data.activeMatch.blue_name}</div>
+                 <div className="text-5xl font-black text-blue-500 italic tracking-tighter uppercase">{data.activeMatch.blue_player_name}</div>
                </div>
              </>
            ) : (

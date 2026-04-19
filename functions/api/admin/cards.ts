@@ -52,6 +52,29 @@ export const onRequest: PagesFunction<{
     } else if (action === 'revoke') {
       await env.DB.prepare("DELETE FROM ngu4th_inventory WHERE id = ?")
         .bind(inventoryId).run();
+    } else if (action === 'random_joker') {
+      // 1. Get all Joker cards
+      const jokers: any = await env.DB.prepare("SELECT id FROM ngu4th_cards WHERE type = '小丑牌'").all();
+      // 2. Get all registered users
+      const users: any = await env.DB.prepare("SELECT kinde_id FROM ngu4th_members WHERE is_registered = 1").all();
+      
+      if (jokers.results.length === 0 || users.results.length === 0) return new Response("No cards or users", { status: 400 });
+
+      // 3. Clear existing unused Jokers
+      await env.DB.prepare(`
+        DELETE FROM ngu4th_inventory 
+        WHERE status = 'unused' AND card_id IN (SELECT id FROM ngu4th_cards WHERE type = '小丑牌')
+      `).run();
+
+      // 4. Shuffle and assign
+      const shuffledJokers = [...jokers.results].sort(() => Math.random() - 0.5);
+      const statements = users.results.map((u: any, i: number) => {
+         // Cycle through jokers if more users than cards
+         const joker = shuffledJokers[i % shuffledJokers.length];
+         return env.DB.prepare("INSERT INTO ngu4th_inventory (card_id, owner_type, owner_id) VALUES (?, 'user', ?)")
+           .bind(joker.id, u.kinde_id);
+      });
+      await env.DB.batch(statements);
     }
 
     return new Response(JSON.stringify({ success: true }), {
