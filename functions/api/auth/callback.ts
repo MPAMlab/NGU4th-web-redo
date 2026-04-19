@@ -70,15 +70,23 @@ export const onRequest: PagesFunction<{
       email = excluded.email
   `).bind(kindeId, username, email, role, legacyStatus).run();
 
-  // If first login and legacyStatus, grant legacy achievement
+  // 1. Grant "NGU传说的冒险者" if legacyStatus
   if (legacyStatus === 1) {
-    await env.DB.prepare("INSERT OR IGNORE INTO ngu4th_user_achievements (kinde_id, achievement_id) VALUES (?, ?)")
-      .bind(kindeId, "legacy").run();
+    const legacyAch: any = await env.DB.prepare("SELECT id FROM ngu4th_achievements WHERE name = 'NGU传说的冒险者'").first();
+    if (legacyAch) {
+      await env.DB.prepare("INSERT OR IGNORE INTO ngu4th_user_achievements (kinde_id, achievement_id) VALUES (?, ?)")
+        .bind(kindeId, legacyAch.id).run();
+    }
   }
   
-  // Grant welcome achievement
-  await env.DB.prepare("INSERT OR IGNORE INTO ngu4th_user_achievements (kinde_id, achievement_id) VALUES (?, ?)")
-    .bind(kindeId, "welcome").run();
+  // 2. Grant "NGU STAFF" if they have the staff role (optional logic based on your needs)
+  if (role === 'admin') {
+     const staffAch: any = await env.DB.prepare("SELECT id FROM ngu4th_achievements WHERE name = 'NGU STAFF'").first();
+     if (staffAch) {
+        await env.DB.prepare("INSERT OR IGNORE INTO ngu4th_user_achievements (kinde_id, achievement_id) VALUES (?, ?)")
+          .bind(kindeId, staffAch.id).run();
+     }
+  }
 
   // Set secure cookie
   const cookie = `auth_token=${idToken}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=3600`;
