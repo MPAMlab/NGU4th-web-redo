@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   Users, Trophy, Swords, Zap, Settings, Info, Save, Trash2, ArrowUp, ArrowDown, 
-  RotateCcw, Plus, Edit, X, LayoutDashboard, Database, Activity, Search, Award, ChevronLeft, PlusCircle, Filter, BookOpen, Star
+  RotateCcw, Plus, Edit, X, LayoutDashboard, Database, Activity, Search, Award, ChevronLeft, PlusCircle, Filter, BookOpen, Star, Eye, EyeOff, Check
 } from 'lucide-react';
 
 interface Achievement {
@@ -10,6 +10,9 @@ interface Achievement {
   condition: string;
   scene: string;
   notes: string;
+  trigger_type: string | null;
+  trigger_value: string | null;
+  is_hidden: number;
 }
 
 interface Member {
@@ -80,10 +83,13 @@ export const AdminDashboard = () => {
   const [applyRedJoker, setApplyRedJoker] = useState(true);
   const [applyBlueJoker, setApplyBlueJoker] = useState(true);
   const [editingCard, setEditingCard] = useState<Partial<Card> | null>(null);
-  const [editingTemplate, setEditingTemplate] = useState<Partial<Achievement> | null>(null);
+  
+  // Achievement Template Inline Editing
+  const [editingTplId, setEditingTplId] = useState<number | null>(null);
+  const [editTplForm, setEditTplForm] = useState<Partial<Achievement>>({});
+
   const [libraryFilter, setLibraryFilter] = useState<'all' | 'joker' | 'tarot' | 'fake'>('all');
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
-
   const [loading, setLoading] = useState(true);
 
   const fetchData = async (silent = false) => {
@@ -128,7 +134,7 @@ export const AdminDashboard = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, ...payload }) 
     });
-    setEditingTemplate(null);
+    setEditingTplId(null);
     fetchData(true);
   };
 
@@ -268,25 +274,73 @@ export const AdminDashboard = () => {
 
       {/* Tab: Achievement Templates */}
       {activeTab === 'templates' && (
-         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 animate-in fade-in duration-300">
-            <div className="lg:col-span-1 space-y-4">
-               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                  <h3 className="font-black italic uppercase text-[10px] tracking-widest text-slate-400 flex items-center gap-2"><Plus size={12}/> {editingTemplate?.id ? '编辑成就' : '新建成就'}</h3>
-                  <form onSubmit={(e)=>{ e.preventDefault(); const fd = new FormData(e.currentTarget); handleAchievementAction(editingTemplate?.id ? 'update_template' : 'create_template', { achievementId: editingTemplate?.id, name: fd.get('name'), condition: fd.get('condition'), scene: fd.get('scene'), notes: fd.get('notes') }); }} className="space-y-3">
-                     <input name="name" defaultValue={editingTemplate?.name} required placeholder="成就名称" className={inputClass} />
-                     <input name="condition" defaultValue={editingTemplate?.condition} placeholder="达成条件" className={inputClass} />
-                     <input name="scene" defaultValue={editingTemplate?.scene} placeholder="获得场景" className={inputClass} />
-                     <textarea name="notes" defaultValue={editingTemplate?.notes} placeholder="备注" className={inputClass + " h-20 resize-none"} />
-                     <div className="flex gap-2">
-                        <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-black uppercase text-[9px]">保存模板</button>
-                        {editingTemplate && <button type="button" onClick={()=>setEditingTemplate(null)} className="px-3 bg-slate-100 rounded-lg text-[9px] font-black uppercase">取消</button>}
-                     </div>
-                  </form>
-               </div>
+         <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center">
+               <div className="flex flex-col"><h3 className="font-black italic uppercase text-[10px] tracking-widest text-slate-400">Template Engine</h3><p className="text-[11px] font-bold text-slate-800">成就模板库与触发逻辑定义</p></div>
+               <button onClick={()=>handleAchievementAction('create_template', { name: '新成就', condition: '达成条件', scene: '场景', notes: '', trigger_type: null, trigger_value: null, is_hidden: 0 })} className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-black uppercase text-[10px] italic shadow-lg hover:scale-105 transition-all flex items-center gap-2"><Plus size={14}/> 新建成就在线定义</button>
             </div>
-            <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-               <div className="bg-slate-50 p-3 px-4 border-b font-black text-[9px] uppercase tracking-widest text-slate-400 flex justify-between items-center"><span>Achievement Definitions</span><Badge variant="outline">{achievements.length} Templates</Badge></div>
-               <div className="overflow-auto max-h-[600px]"><table className="w-full text-left text-xs"><thead className="bg-slate-50 font-black border-b sticky top-0 z-10"><tr><th className="p-3">成就名称</th><th className="p-3">达成条件</th><th className="p-3">场景</th><th className="p-3 text-right">Ops</th></tr></thead><tbody className="divide-y divide-slate-100">{achievements.map(tpl => (<tr key={tpl.id} className="hover:bg-slate-50"><td className="p-3 font-black uppercase text-indigo-600">{tpl.name}</td><td className="p-3 text-slate-500 italic">{tpl.condition}</td><td className="p-3"><Badge variant="secondary" className="bg-opacity-50">{tpl.scene}</Badge></td><td className="p-3 text-right"><div className="flex justify-end gap-1"><button onClick={()=>setEditingTemplate(tpl)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"><Edit size={14}/></button><button onClick={()=>{if(confirm('Delete?')) handleAchievementAction('delete_template', { achievementId: tpl.id })}} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={14}/></button></div></td></tr>))}</tbody></table></div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+               <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 font-black border-b sticky top-0 z-10 text-slate-400 uppercase tracking-widest">
+                     <tr><th className="p-4">名称 / 条件</th><th className="p-4">隐藏</th><th className="p-4">自动触发逻辑 (HOOKS)</th><th className="p-4 text-right">Ops</th></tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                     {achievements.map(tpl => {
+                        const isEditing = editingTplId === tpl.id;
+                        return (
+                          <tr key={tpl.id} className={isEditing ? "bg-indigo-50/50 transition-colors" : "hover:bg-slate-50"}>
+                             <td className="p-4">
+                                {isEditing ? (
+                                   <div className="space-y-2 w-[240px]">
+                                      <input value={editTplForm.name} onChange={e=>setEditTplForm({...editTplForm, name: e.target.value})} className={inputClass} placeholder="名称" />
+                                      <input value={editTplForm.condition || ''} onChange={e=>setEditTplForm({...editTplForm, condition: e.target.value})} className={inputClass + " text-[10px]"} placeholder="条件描述" />
+                                   </div>
+                                ) : (
+                                   <div className="flex flex-col"><span className="font-black text-[11px] uppercase text-indigo-600">{tpl.name}</span><span className="opacity-40 italic font-bold text-[9px] truncate max-w-[240px]">{tpl.condition}</span></div>
+                                )}
+                             </td>
+                             <td className="p-4">
+                                {isEditing ? (
+                                   <input type="checkbox" checked={editTplForm.is_hidden === 1} onChange={e=>setEditTplForm({...editTplForm, is_hidden: e.target.checked?1:0})} className="w-4 h-4 accent-indigo-600" />
+                                ) : (
+                                   tpl.is_hidden === 1 ? <EyeOff size={14} className="text-amber-500" /> : <Eye size={14} className="opacity-20" />
+                                )}
+                             </td>
+                             <td className="p-4">
+                                {isEditing ? (
+                                   <div className="flex gap-2 w-[240px]">
+                                      <select value={editTplForm.trigger_type || "manual"} onChange={e=>setEditTplForm({...editTplForm, trigger_type: e.target.value === 'manual' ? null : e.target.value})} className={selectClass + " w-1/2"}>
+                                         <option value="manual">手动授权</option>
+                                         <option value="registration">完成报名</option>
+                                         <option value="team_join">加入队伍</option>
+                                         <option value="role_eq">身份等于</option>
+                                         <option value="score_ge">单局分数 {'>'}= n</option>
+                                      </select>
+                                      <input value={editTplForm.trigger_value || ''} onChange={e=>setEditTplForm({...editTplForm, trigger_value: e.target.value})} className={inputClass + " w-1/2"} placeholder="触发值" />
+                                   </div>
+                                ) : (
+                                   tpl.trigger_type ? <Badge variant="outline">{tpl.trigger_type}: {tpl.trigger_value}</Badge> : <span className="opacity-20 font-black italic tracking-widest text-[9px]">MANUAL</span>
+                                )}
+                             </td>
+                             <td className="p-4 text-right">
+                                {isEditing ? (
+                                   <div className="flex justify-end gap-1">
+                                      <button onClick={()=>handleAchievementAction('update_template', { ...editTplForm, achievementId: tpl.id })} className="p-2 bg-indigo-600 text-white rounded-lg shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all"><Check size={14}/></button>
+                                      <button onClick={()=>setEditingTplId(null)} className="p-2 bg-slate-200 text-slate-600 rounded-lg"><X size={14}/></button>
+                                   </div>
+                                ) : (
+                                   <div className="flex justify-end gap-1">
+                                      <button onClick={()=>{ setEditingTplId(tpl.id); setEditTplForm(tpl); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"><Edit size={14}/></button>
+                                      <button onClick={()=>{if(confirm('Delete?')) handleAchievementAction('delete_template', { achievementId: tpl.id })}} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={14}/></button>
+                                   </div>
+                                )}
+                             </td>
+                          </tr>
+                        );
+                     })}
+                  </tbody>
+               </table>
             </div>
          </div>
       )}
@@ -297,7 +351,7 @@ export const AdminDashboard = () => {
             {!selectedUser ? (
                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
                   <div className="font-black text-[10px] uppercase tracking-widest text-slate-400">Select Operative for Authorization</div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">{members.map(m=>(<button key={m.kinde_id} onClick={()=>setSelectedUser(m.kinde_id)} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col items-center gap-2 hover:border-indigo-600 hover:bg-white transition-all group"><div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-300 group-hover:text-indigo-600 transition-colors shadow-sm"><Users size={14}/></div><span className="font-black text-[8px] uppercase truncate w-full text-center">{m.username}</span></button>))}</div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">{members.map(m=>(<button key={m.kinde_id} onClick={()=>setSelectedUser(m.kinde_id)} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col items-center gap-2 hover:border-indigo-600 hover:bg-white transition-all group active:scale-95"><div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-300 group-hover:text-indigo-600 transition-colors shadow-sm"><Users size={14}/></div><span className="font-black text-[8px] uppercase truncate w-full text-center">{m.username}</span></button>))}</div>
                </div>
             ) : (
                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 animate-in slide-in-from-right-2">

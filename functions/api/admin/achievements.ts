@@ -38,7 +38,7 @@ export const onRequest: PagesFunction<{
 
   if (request.method === "POST") {
     const body = await request.json() as any;
-    const { action, targetKindeId, achievementId, instanceId, name, condition, scene, notes } = body;
+    const { action, targetKindeId, achievementId, instanceId, name, condition, scene, notes, trigger_type, trigger_value, is_hidden } = body;
     
     if (action === 'grant') {
       await env.DB.prepare("INSERT OR IGNORE INTO ngu4th_user_achievements (kinde_id, achievement_id) VALUES (?, ?)")
@@ -51,13 +51,16 @@ export const onRequest: PagesFunction<{
           .bind(targetKindeId, achievementId).run();
       }
     } else if (action === 'create_template') {
-      await env.DB.prepare("INSERT INTO ngu4th_achievements (name, condition, scene, notes) VALUES (?, ?, ?, ?)")
-        .bind(name, condition, scene, notes).run();
+      await env.DB.prepare("INSERT INTO ngu4th_achievements (name, condition, scene, notes, trigger_type, trigger_value, is_hidden) VALUES (?, ?, ?, ?, ?, ?, ?)")
+        .bind(name, condition, scene, notes, trigger_type, trigger_value, is_hidden).run();
     } else if (action === 'update_template') {
-      await env.DB.prepare("UPDATE ngu4th_achievements SET name = ?, condition = ?, scene = ?, notes = ? WHERE id = ?")
-        .bind(name, condition, scene, notes, achievementId).run();
+      await env.DB.prepare(`
+        UPDATE ngu4th_achievements 
+        SET name = ?, condition = ?, scene = ?, notes = ?, trigger_type = ?, trigger_value = ?, is_hidden = ? 
+        WHERE id = ?
+      `)
+        .bind(name, condition, scene, notes, trigger_type, trigger_value, is_hidden, achievementId).run();
     } else if (action === 'delete_template') {
-      // Also delete associations
       await env.DB.prepare("DELETE FROM ngu4th_user_achievements WHERE achievement_id = ?").bind(achievementId).run();
       await env.DB.prepare("DELETE FROM ngu4th_achievements WHERE id = ?").bind(achievementId).run();
     }

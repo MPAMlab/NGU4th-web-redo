@@ -1,11 +1,13 @@
+import { checkAchievements } from "../../lib/achievements";
+
 export const onRequest: PagesFunction<{
   DB: D1Database;
 }> = async ({ request, env }) => {
   const cookieHeader = request.headers.get("Cookie") || "";
-  const match = cookieHeader.match(/auth_token=([^;]+)/);
-  if (!match) return new Response("Unauthorized", { status: 401 });
+  const matchToken = cookieHeader.match(/auth_token=([^;]+)/);
+  if (!matchToken) return new Response("Unauthorized", { status: 401 });
 
-  const idToken = match[1];
+  const idToken = matchToken[1];
   let adminId: string;
   try {
     const payload = JSON.parse(atob(idToken.split(".")[1]));
@@ -26,7 +28,10 @@ export const onRequest: PagesFunction<{
       return new Response("Missing required fields", { status: 400 });
     }
 
-    // Helper to calculate and insert
+    // Get match info to get player IDs
+    const match: any = await env.DB.prepare("SELECT * FROM ngu4th_matches WHERE id = ?").bind(matchId).first();
+
+    // Helper to calculate, insert and check achievements
     const commitRound = async (playerId: string, team: string, data: any) => {
       const totalScore = parseFloat(data.baseScore) * (parseFloat(data.multiplier) || 1);
       
@@ -40,14 +45,12 @@ export const onRequest: PagesFunction<{
         totalScore, roundType, data.tarotId || null, data.hand, data.fakeCards || null
       ).run();
 
-      // Consuming Tarot if one was assigned to the player/team specifically? 
-      // The user says "tarot is picked from 3", so we just log the ID.
+      // HOOK: Check achievements for score
+      await checkAchievements(env.DB, playerId, { type: 'score', value: totalScore });
+      
       return totalScore;
     };
 
-    // Get match info to get player IDs
-    const match: any = await env.DB.prepare("SELECT * FROM ngu4th_matches WHERE id = ?").bind(matchId).first();
-    
     await commitRound(match.red_player_id, 'red', redData);
     await commitRound(match.blue_player_id, 'blue', blueData);
 

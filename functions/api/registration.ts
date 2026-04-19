@@ -1,3 +1,5 @@
+import { checkAchievements } from "../lib/achievements";
+
 export const onRequest: PagesFunction<{
   DB: D1Database;
 }> = async ({ request, env }) => {
@@ -15,27 +17,27 @@ export const onRequest: PagesFunction<{
   }
 
   if (request.method === "GET") {
-    const user = await env.DB.prepare("SELECT is_registered, last_registered_at, team FROM ngu4th_members WHERE kinde_id = ?")
+    const member = await env.DB.prepare("SELECT * FROM ngu4th_members WHERE kinde_id = ?")
       .bind(kindeId).first();
-    
-    const roster = await env.DB.prepare("SELECT username, team FROM ngu4th_members WHERE is_registered = 1").all();
-    
-    return new Response(JSON.stringify({ 
-      currentUser: user, 
-      publicRoster: roster.results 
-    }), { headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify(member), {
+      headers: { "Content-Type": "application/json" }
+    });
   }
 
   if (request.method === "POST") {
-    const { action, team } = await request.json() as { action: 'register' | 'cancel', team?: string };
+    const { action } = await request.json() as { action: string };
     
-    const isRegistered = action === 'register' ? 1 : 0;
-    const finalTeam = action === 'register' ? (team || null) : null;
+    if (action === "register") {
+      await env.DB.prepare("UPDATE ngu4th_members SET is_registered = 1 WHERE kinde_id = ?")
+        .bind(kindeId).run();
+      // HOOK: Check achievements for registration
+      await checkAchievements(env.DB, kindeId, { type: 'registration' });
+    } else if (action === "cancel") {
+      await env.DB.prepare("UPDATE ngu4th_members SET is_registered = 0, team = NULL WHERE kinde_id = ?")
+        .bind(kindeId).run();
+    }
 
-    await env.DB.prepare("UPDATE ngu4th_members SET is_registered = ?, last_registered_at = ?, team = ? WHERE kinde_id = ?")
-      .bind(isRegistered, new Date().toISOString(), finalTeam, kindeId).run();
-
-    return new Response(JSON.stringify({ success: true, is_registered: isRegistered, team: finalTeam }), {
+    return new Response(JSON.stringify({ success: true }), {
       headers: { "Content-Type": "application/json" }
     });
   }
