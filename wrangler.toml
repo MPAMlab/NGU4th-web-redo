@@ -7,16 +7,9 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "ngu3rd_signup"
-database_id = "your-database-id-here" # Needs to be updated by user or fetched if possible
+database_id = "7b956247-6532-467e-9e63-48e5bb16f360" # Needs to be updated by user or fetched if possible
 
 [[r2_buckets]]
 binding = "BUCKET"
 bucket_name = "ngusignup"
 
-[vars]
-KINDE_ISSUER_URL = "https://ngu3rd.kinde.com"
-KINDE_CLIENT_ID = "17b33b46fd9e44b196af18f52aefcdb7"
-KINDE_SITE_URL = "http://localhost:3000"
-KINDE_POST_LOGOUT_REDIRECT_URL = "http://localhost:3000"
-KINDE_POST_LOGIN_REDIRECT_URL = "http://localhost:3000/dashboard"
-# KINDE_CLIENT_SECRET should be set as a secret via wrangler secret put or in .dev.vars
