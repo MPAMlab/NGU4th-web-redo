@@ -52,6 +52,19 @@ export const onRequest: PagesFunction<{
     } else if (action === 'revoke') {
       await env.DB.prepare("DELETE FROM ngu4th_inventory WHERE id = ?")
         .bind(inventoryId).run();
+    } else if (action === 'create_card') {
+      const { name, type, description, is_dynamic } = body;
+      await env.DB.prepare("INSERT INTO ngu4th_cards (name, type, description, is_dynamic) VALUES (?, ?, ?, ?)")
+        .bind(name, type, description, is_dynamic ? 1 : 0).run();
+    } else if (action === 'update_card') {
+      const { cardId: id, name, type, description, is_dynamic } = body;
+      await env.DB.prepare("UPDATE ngu4th_cards SET name = ?, type = ?, description = ?, is_dynamic = ? WHERE id = ?")
+        .bind(name, type, description, is_dynamic ? 1 : 0, id).run();
+    } else if (action === 'delete_card') {
+      const { cardId: id } = body;
+      // Also cleanup inventory references
+      await env.DB.prepare("DELETE FROM ngu4th_inventory WHERE card_id = ?").bind(id).run();
+      await env.DB.prepare("DELETE FROM ngu4th_cards WHERE id = ?").bind(id).run();
     } else if (action === 'random_joker') {
       const jokers: any = await env.DB.prepare("SELECT id FROM ngu4th_cards WHERE type = '小丑牌'").all();
       const users: any = await env.DB.prepare("SELECT kinde_id FROM ngu4th_members WHERE is_registered = 1").all();
