@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const content = fs.readFileSync('牌库.csv', 'utf-8');
+const content = fs.readFileSync('ngu4th_cards_260413.csv', 'utf-8');
 
 function parseCSV(csv) {
     const rows = [];
@@ -50,19 +50,21 @@ function parseCSV(csv) {
 const data = parseCSV(content);
 const body = data.slice(1);
 
-let sql = '-- Migration: 0005_seed_cards.sql\n-- Description: Seed card library from CSV\n\n';
+let sql = '-- Migration: 0011_seed_new_cards.sql\n-- Description: Seed cards from updated CSV\n\n';
 
 body.forEach(row => {
-    if (row.length < 3) return;
-    const [name, type, description] = row;
+    // Expected structure: name,type,multiplier,exponent_bonus,is_variable,description
+    if (row.length < 6) return;
+    const [name, type, multiplier, exponent_bonus, is_variable, description] = row;
+    
     if (!name || !type) return;
 
     const escapedName = name.replace(/'/g, "''");
     const escapedType = type.replace(/'/g, "''");
     const escapedDesc = description.replace(/'/g, "''");
 
-    sql += `INSERT OR IGNORE INTO ngu4th_cards (name, type, description) VALUES ('${escapedName}', '${escapedType}', '${escapedDesc}');\n`;
+    sql += `INSERT OR IGNORE INTO ngu4th_cards (name, type, multiplier, exponent_bonus, is_variable, description) VALUES ('${escapedName}', '${escapedType}', ${parseFloat(multiplier) || 1.0}, ${parseFloat(exponent_bonus) || 0.0}, ${parseInt(is_variable) || 0}, '${escapedDesc}');\n`;
 });
 
-fs.writeFileSync('migrations/0005_seed_cards.sql', sql);
-console.log('Successfully generated migrations/0005_seed_cards.sql');
+fs.writeFileSync('migrations/0011_seed_new_cards.sql', sql);
+console.log('Successfully generated migrations/0011_seed_new_cards.sql');

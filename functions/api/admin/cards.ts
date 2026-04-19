@@ -20,7 +20,7 @@ export const onRequest: PagesFunction<{
   if (adminUser?.role !== 'admin') return new Response("Forbidden", { status: 403 });
 
   if (request.method === "GET") {
-    // Fetch card library and current inventory
+    // Fetch card library
     const cards = await env.DB.prepare("SELECT * FROM ngu4th_cards ORDER BY type, name").all();
     
     // Inventory joins with cards to get names
@@ -44,29 +44,25 @@ export const onRequest: PagesFunction<{
 
   if (request.method === "POST") {
     const body = await request.json() as any;
-    const { action, cardId, ownerType, ownerId, inventoryId } = body;
+    const { action, cardId, ownerType, ownerId, inventoryId, name, type, description, is_variable, multiplier, exponent_bonus } = body;
     
     if (action === 'assign') {
       await env.DB.prepare("INSERT INTO ngu4th_inventory (card_id, owner_type, owner_id) VALUES (?, ?, ?)")
         .bind(cardId, ownerType, ownerId).run();
     } else if (action === 'revoke') {
-      await env.DB.prepare("DELETE FROM ngu4th_inventory WHERE id = ?")
-        .bind(inventoryId).run();
+      await env.DB.prepare("DELETE FROM ngu4th_inventory WHERE id = ?").bind(inventoryId).run();
     } else if (action === 'create_card') {
-      const { name, type, description, is_dynamic } = body;
-      await env.DB.prepare("INSERT INTO ngu4th_cards (name, type, description, is_dynamic) VALUES (?, ?, ?, ?)")
-        .bind(name, type, description, is_dynamic ? 1 : 0).run();
+      await env.DB.prepare("INSERT INTO ngu4th_cards (name, type, description, is_variable, multiplier, exponent_bonus) VALUES (?, ?, ?, ?, ?, ?)")
+        .bind(name, type, description, is_variable ? 1 : 0, multiplier || 1.0, exponent_bonus || 0.0).run();
     } else if (action === 'update_card') {
-      const { cardId: id, name, type, description, is_dynamic } = body;
-      await env.DB.prepare("UPDATE ngu4th_cards SET name = ?, type = ?, description = ?, is_dynamic = ? WHERE id = ?")
-        .bind(name, type, description, is_dynamic ? 1 : 0, id).run();
+      await env.DB.prepare("UPDATE ngu4th_cards SET name = ?, type = ?, description = ?, is_variable = ?, multiplier = ?, exponent_bonus = ? WHERE id = ?")
+        .bind(name, type, description, is_variable ? 1 : 0, multiplier || 1.0, exponent_bonus || 0.0, cardId).run();
     } else if (action === 'delete_card') {
-      const { cardId: id } = body;
       // Also cleanup inventory references
-      await env.DB.prepare("DELETE FROM ngu4th_inventory WHERE card_id = ?").bind(id).run();
-      await env.DB.prepare("DELETE FROM ngu4th_cards WHERE id = ?").bind(id).run();
+      await env.DB.prepare("DELETE FROM ngu4th_inventory WHERE card_id = ?").bind(cardId).run();
+      await env.DB.prepare("DELETE FROM ngu4th_cards WHERE id = ?").bind(cardId).run();
     } else if (action === 'random_joker') {
-      const jokers: any = await env.DB.prepare("SELECT id FROM ngu4th_cards WHERE type = '小丑牌'").all();
+      const jokers: any = await env.DB.prepare("SELECT id FROM ngu4th_cards WHERE type = 'joker'").all();
       const users: any = await env.DB.prepare("SELECT kinde_id FROM ngu4th_members WHERE is_registered = 1").all();
       
       if (jokers.results.length === 0 || users.results.length === 0) return new Response("No cards or users", { status: 400 });
@@ -74,7 +70,6 @@ export const onRequest: PagesFunction<{
       // Clear existing Joker assignments
       await env.DB.prepare("UPDATE ngu4th_members SET joker_card_id = NULL WHERE is_registered = 1").run();
 
-      // Shuffle and assign to the members table
       const shuffledJokers = [...jokers.results].sort(() => Math.random() - 0.5);
       const statements = users.results.map((u: any, i: number) => {
          const joker = shuffledJokers[i % shuffledJokers.length];

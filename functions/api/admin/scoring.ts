@@ -28,16 +28,16 @@ export const onRequest: PagesFunction<{
 
     // Helper to calculate and insert
     const commitRound = async (playerId: string, team: string, data: any) => {
-      const totalScore = parseFloat(data.baseScore) * Math.pow(parseFloat(data.multiplier) || 1, parseFloat(data.exponent) || 1);
+      const totalScore = parseFloat(data.baseScore) * (parseFloat(data.multiplier) || 1);
       
       await env.DB.prepare(`
-        INSERT INTO ngu4th_rounds (match_id, player_id, team, round_number, base_score, multiplier, exponent, total_score, round_type, tarot_id, poker_hand)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO ngu4th_rounds (match_id, player_id, team, round_number, base_score, multiplier, exponent, total_score, round_type, tarot_id, poker_hand, active_fake_cards)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         matchId, playerId, team, 
         roundType === 'red_pick' ? 1 : 2, 
-        data.baseScore, data.multiplier, data.exponent || 1, 
-        totalScore, roundType, data.tarotId || null, data.hand
+        data.baseScore, data.multiplier, 1.0, 
+        totalScore, roundType, data.tarotId || null, data.hand, data.fakeCards || null
       ).run();
 
       // Consuming Tarot if one was assigned to the player/team specifically? 
