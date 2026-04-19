@@ -31,23 +31,17 @@ export const onRequest: PagesFunction<{
       const totalScore = parseFloat(data.baseScore) * Math.pow(parseFloat(data.multiplier) || 1, parseFloat(data.exponent) || 1);
       
       await env.DB.prepare(`
-        INSERT INTO ngu4th_rounds (match_id, player_id, team, round_number, base_score, multiplier, exponent, total_score, round_type, tarot_used, poker_hand)
+        INSERT INTO ngu4th_rounds (match_id, player_id, team, round_number, base_score, multiplier, exponent, total_score, round_type, tarot_id, poker_hand)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         matchId, playerId, team, 
         roundType === 'red_pick' ? 1 : 2, 
         data.baseScore, data.multiplier, data.exponent || 1, 
-        totalScore, roundType, data.tarot, data.hand
+        totalScore, roundType, data.tarotId || null, data.hand
       ).run();
 
-      // Mark Joker as used for the primary team ONLY if that's their pick
-      const shouldConsumeJoker = (team === 'red' && roundType === 'red_pick') || (team === 'blue' && roundType === 'blue_pick');
-      if (shouldConsumeJoker) {
-        await env.DB.prepare(`
-          UPDATE ngu4th_inventory SET status = 'used' 
-          WHERE owner_id = ? AND status = 'unused' AND card_id IN (SELECT id FROM ngu4th_cards WHERE type = '小丑牌')
-        `).bind(playerId).run();
-      }
+      // Consuming Tarot if one was assigned to the player/team specifically? 
+      // The user says "tarot is picked from 3", so we just log the ID.
       return totalScore;
     };
 

@@ -23,7 +23,7 @@ export const onRequest: PagesFunction<{
             `).bind(activeMatchId).first();
           }
 
-          // 3. Get team totals
+          // 3. Get team totals and exponents
           const totals: any = await env.DB.prepare(`
             SELECT team, SUM(total_score) as sum FROM ngu4th_rounds GROUP BY team
           `).all();
@@ -34,16 +34,25 @@ export const onRequest: PagesFunction<{
             if (r.team === 'blue') teamScores.blue = r.sum;
           });
 
-          // 4. Get recent rounds
+          const exponents: any = await env.DB.prepare("SELECT key, value FROM ngu4th_system_state WHERE key LIKE '%_exponent'").all();
+          const teamExponents = { red: 1.0, blue: 1.0 };
+          exponents.results.forEach((e: any) => {
+            if (e.key === 'red_exponent') teamExponents.red = parseFloat(e.value) || 1.0;
+            if (e.key === 'blue_exponent') teamExponents.blue = parseFloat(e.value) || 1.0;
+          });
+
+          // 4. Get recent rounds with Tarot names
           const recentRounds = await env.DB.prepare(`
-            SELECT r.*, m.username FROM ngu4th_rounds r
+            SELECT r.*, m.username, c.name as tarot_name FROM ngu4th_rounds r
             JOIN ngu4th_members m ON r.player_id = m.kinde_id
+            LEFT JOIN ngu4th_cards c ON r.tarot_id = c.id
             ORDER BY r.created_at DESC LIMIT 5
           `).all();
 
           const payload = JSON.stringify({
             activeMatch,
             teamScores,
+            teamExponents,
             recentRounds: recentRounds.results,
             timestamp: Date.now()
           });

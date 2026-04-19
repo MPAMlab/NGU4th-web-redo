@@ -20,18 +20,21 @@ export const onRequest: PagesFunction<{
   if (adminUser?.role !== 'admin') return new Response("Forbidden", { status: 403 });
 
   if (request.method === "GET") {
-    const members = await env.DB.prepare("SELECT kinde_id, username, email, is_registered, team FROM ngu4th_members").all();
+    const members = await env.DB.prepare("SELECT kinde_id, username, email, is_registered, team, team_order, joker_card_id FROM ngu4th_members").all();
     return new Response(JSON.stringify(members.results), {
       headers: { "Content-Type": "application/json" }
     });
   }
 
   if (request.method === "POST") {
-    const { targetKindeId, action, team, mapping } = await request.json() as any;
+    const { targetKindeId, action, team, mapping, jokerCardId } = await request.json() as any;
     
     if (action === 'set_team') {
       await env.DB.prepare("UPDATE ngu4th_members SET is_registered = 1, team = ? WHERE kinde_id = ?")
         .bind(team, targetKindeId).run();
+    } else if (action === 'set_joker') {
+      await env.DB.prepare("UPDATE ngu4th_members SET joker_card_id = ? WHERE kinde_id = ?")
+        .bind(jokerCardId, targetKindeId).run();
     } else if (action === 'remove_registration') {
       await env.DB.prepare("UPDATE ngu4th_members SET is_registered = 0, team = NULL WHERE kinde_id = ?")
         .bind(targetKindeId).run();
