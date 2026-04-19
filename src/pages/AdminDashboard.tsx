@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   Users, Trophy, Swords, Zap, Settings, Info, Save, Trash2, ArrowUp, ArrowDown, 
-  RotateCcw, Plus, Edit, X, LayoutDashboard, Database, Activity, Search, Award, ChevronLeft, PlusCircle, Filter, BookOpen, Star, Eye, EyeOff, Check
+  RotateCcw, Plus, Edit, X, LayoutDashboard, Database, Activity, Search, Award, ChevronLeft, PlusCircle, Filter, BookOpen, Star, Eye, EyeOff, Check, Play, Archive, Calendar
 } from 'lucide-react';
 
 interface Achievement {
@@ -13,6 +13,13 @@ interface Achievement {
   trigger_type: string | null;
   trigger_value: string | null;
   is_hidden: number;
+}
+
+interface Game {
+  id: number;
+  name: string;
+  status: string;
+  created_at: string;
 }
 
 interface Member {
@@ -71,7 +78,7 @@ const Badge = ({ children, className, variant = 'default' }: { children: React.R
 };
 
 export const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState<'members' | 'achievements' | 'templates' | 'matches' | 'live' | 'library'>('members');
+  const [activeTab, setActiveTab] = useState<'members' | 'achievements' | 'templates' | 'matches' | 'live' | 'library' | 'games'>('members');
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [userAchievements, setUserAchievements] = useState<any[]>([]);
@@ -79,12 +86,12 @@ export const AdminDashboard = () => {
   const [cardLibrary, setCardLibrary] = useState<Card[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [systemState, setSystemState] = useState<any>({});
+  const [games, setGames] = useState<Game[]>([]);
   
   const [applyRedJoker, setApplyRedJoker] = useState(true);
   const [applyBlueJoker, setApplyBlueJoker] = useState(true);
   const [editingCard, setEditingCard] = useState<Partial<Card> | null>(null);
   
-  // Achievement Template Inline Editing
   const [editingTplId, setEditingTplId] = useState<number | null>(null);
   const [editTplForm, setEditTplForm] = useState<Partial<Achievement>>({});
 
@@ -116,7 +123,8 @@ export const AdminDashboard = () => {
       setMatches(matchData);
       setCardLibrary(cardData.library);
       setInventory(cardData.inventory);
-      setSystemState(sysData);
+      setSystemState(sysData.config);
+      setGames(sysData.games);
     } catch (err: any) {
       console.error(err);
     } finally {
@@ -129,20 +137,13 @@ export const AdminDashboard = () => {
   const switchTab = (tab: any) => { setActiveTab(tab); fetchData(true); };
 
   const handleAchievementAction = async (action: string, payload: any) => {
-    await fetch('/api/admin/achievements', { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...payload }) 
-    });
+    await fetch('/api/admin/achievements', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ...payload }) });
     setEditingTplId(null);
     fetchData(true);
   };
 
   const handleMemberAction = async (targetKindeId: string, action: string, value: any) => {
-    const body: any = { targetKindeId, action };
-    if (action === 'set_team') body.team = value;
-    if (action === 'set_joker') body.jokerCardId = value;
-    await fetch('/api/admin/registration', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    await fetch('/api/admin/registration', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetKindeId, action, team: action === 'set_team' ? value : undefined, jokerCardId: action === 'set_joker' ? value : undefined }) });
     fetchData(true);
   };
 
@@ -170,20 +171,12 @@ export const AdminDashboard = () => {
     const redPlayerId = formData.get('red') as string;
     const bluePlayerId = formData.get('blue') as string;
     if (!redPlayerId || !bluePlayerId) return;
-    await fetch('/api/admin/matches', { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'create', redPlayerId, bluePlayerId, orderIndex: matches.length }) 
-    });
+    await fetch('/api/admin/matches', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', redPlayerId, bluePlayerId, orderIndex: matches.length }) });
     fetchData(true);
   };
 
   const handleSetActiveMatch = async (matchId: string | null) => {
-    await fetch('/api/admin/system', { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: 'active_match_id', value: matchId }) 
-    });
+    await fetch('/api/admin/system', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'active_match_id', value: matchId }) });
     fetchData(true);
   };
 
@@ -226,7 +219,7 @@ export const AdminDashboard = () => {
       <header className="flex justify-between items-center bg-slate-900 p-4 px-6 rounded-2xl text-white shadow-lg">
         <div className="flex items-center gap-3">
            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg"><LayoutDashboard size={20} /></div>
-           <div><h1 className="text-xl font-black tracking-tighter uppercase italic leading-none">NGU4th Admin</h1><p className="text-[8px] font-bold opacity-40 uppercase tracking-widest">Global Ops v9.6</p></div>
+           <div><h1 className="text-xl font-black tracking-tighter uppercase italic leading-none">NGU4th Admin</h1><p className="text-[8px] font-bold opacity-40 uppercase tracking-widest">Global Ops v9.8</p></div>
         </div>
         <div className="flex gap-2">
           <a href="/live" target="_blank" className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-black text-[9px] uppercase transition-all flex items-center gap-2 italic tracking-wider border border-white/5"><Activity size={12} /> Live View</a>
@@ -235,12 +228,32 @@ export const AdminDashboard = () => {
       </header>
 
       <nav className="flex gap-1 bg-slate-200/50 p-1 rounded-xl w-fit border border-slate-200">
-        {(['members', 'achievements', 'templates', 'matches', 'live', 'library'] as const).map(tab => (
+        {(['members', 'achievements', 'templates', 'matches', 'live', 'library', 'games'] as const).map(tab => (
           <button key={tab} onClick={() => switchTab(tab)} className={`px-4 py-1.5 rounded-lg font-black transition-all whitespace-nowrap uppercase tracking-tighter text-[9px] ${activeTab === tab ? 'bg-white shadow-sm text-indigo-600 border border-indigo-100' : 'text-slate-500 hover:text-slate-800'}`}>
-            {tab === 'members' ? '选手' : tab === 'achievements' ? '发放' : tab === 'templates' ? '成就库' : tab === 'matches' ? '赛程' : tab === 'live' ? '计分' : '牌库'}
+            {tab === 'members' ? '选手' : tab === 'achievements' ? '发放' : tab === 'templates' ? '成就库' : tab === 'matches' ? '赛程' : tab === 'live' ? '计分' : tab === 'library' ? '牌库' : '游戏管理'}
           </button>
         ))}
       </nav>
+
+      {/* Tab: Games Management */}
+      {activeTab === 'games' && (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 animate-in fade-in duration-300">
+           <div className="lg:col-span-1 space-y-4">
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                 <h3 className="font-black italic uppercase text-[10px] tracking-widest text-slate-400 flex items-center gap-2"><PlusCircle size={12}/> 开启新一轮游戏</h3>
+                 <form onSubmit={async (e)=>{e.preventDefault(); const name = new FormData(e.currentTarget).get('name'); await fetch('/api/admin/system', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action: 'create_game', name }) }); fetchData(true); (e.target as any).reset();}} className="space-y-3">
+                    <input name="name" required placeholder="游戏/轮次名称 (e.g. Day 2)" className={inputClass} />
+                    <button type="submit" className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-black uppercase text-[9px] shadow-lg">归档当前并创建</button>
+                    <p className="text-[7px] text-slate-400 italic">开启后，所有当前未完成的对阵将被归档，系统状态将重置。</p>
+                 </form>
+              </div>
+           </div>
+           <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="bg-slate-50 p-3 border-b font-black text-[9px] uppercase tracking-widest text-slate-400">Archive Records</div>
+              <table className="w-full text-left text-xs"><thead className="bg-slate-50 font-black border-b"><tr><th className="p-3">轮次名称</th><th className="p-3">状态</th><th className="p-3">创建时间</th><th className="p-3 text-right">Ops</th></tr></thead><tbody className="divide-y divide-slate-100">{games.map(g => (<tr key={g.id} className="hover:bg-slate-50"><td className="p-3 font-black uppercase">{g.name}</td><td className="p-3"><Badge variant={g.status === 'active' ? 'default' : 'secondary'}>{g.status}</Badge></td><td className="p-3 text-slate-400 font-mono text-[9px]">{new Date(g.created_at).toLocaleString()}</td><td className="p-3 text-right"><button onClick={async ()=>{if(confirm('Archive?')) {await fetch('/api/admin/system', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action: 'archive_game', gameId: g.id }) }); fetchData(true);}}} className="p-1 text-slate-400 hover:text-indigo-600"><Archive size={14}/></button></td></tr>))}</tbody></table>
+           </div>
+        </div>
+      )}
 
       {/* Tab: Members */}
       {activeTab === 'members' && (
@@ -359,7 +372,7 @@ export const AdminDashboard = () => {
                      <div className="flex items-center gap-4"><div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center"><Users size={20}/></div><div><h2 className="text-lg font-black uppercase italic leading-none">{targetMember?.username}</h2><p className="text-[8px] font-bold opacity-30 mt-1 uppercase">{targetMember?.kinde_id}</p></div></div>
                      <button onClick={()=>setSelectedUser(null)} className="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg font-black text-[9px] uppercase transition-all flex items-center gap-2 italic border border-white/10"><ChevronLeft size={12}/> Back to Hub</button>
                   </div>
-                  <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"><div className="bg-slate-50 p-3 border-b font-black text-[9px] uppercase tracking-widest text-slate-400">Grant Permissions</div><div className="overflow-auto max-h-[500px]"><table className="w-full text-left text-xs"><tbody className="divide-y divide-slate-100">{achievements.map(tpl=>{ const earned=earnedAchs.some(ua=>ua.achievement_id===tpl.id); return(<tr key={tpl.id} className="hover:bg-slate-50 transition-all group"><td className="p-3"><div className="flex flex-col"><span className="font-black text-[11px] uppercase">{tpl.name}</span><span className="opacity-40 italic font-bold text-[8px] uppercase truncate max-w-[300px]">{tpl.condition}</span></div></td><td className="p-3 text-right"><button disabled={earned} onClick={()=>handleAchievementAction('grant',{targetKindeId:selectedUser,achievementId:tpl.id})} className={`px-4 py-1.5 rounded-lg font-black text-[8px] uppercase transition-all ${earned?'bg-slate-50 text-slate-300':'bg-indigo-600 text-white hover:scale-105 active:scale-95'}`}>{earned?'Ready':'Grant'}</button></td></tr>); })}</tbody></table></div></div>
+                  <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"><div className="bg-slate-50 p-3 border-b font-black text-[9px] uppercase tracking-widest text-slate-400">Grant Permissions</div><div className="overflow-auto max-h-[500px]"><table className="w-full text-left text-xs"><tbody className="divide-y divide-slate-100">{achievements.map(tpl=>{ const earned=userAchievements.some(ua=>ua.kinde_id===selectedUser && ua.achievement_id===tpl.id); return(<tr key={tpl.id} className="hover:bg-slate-50 transition-all group"><td className="p-3"><div className="flex flex-col"><span className="font-black text-[11px] uppercase">{tpl.name}</span><span className="opacity-40 italic font-bold text-[8px] uppercase truncate max-w-[300px]">{tpl.condition}</span></div></td><td className="p-3 text-right"><button disabled={earned} onClick={()=>handleAchievementAction('grant',{targetKindeId:selectedUser,achievementId:tpl.id})} className={`px-4 py-1.5 rounded-lg font-black text-[8px] uppercase transition-all ${earned?'bg-slate-50 text-slate-300':'bg-indigo-600 text-white hover:scale-105 active:scale-95'}`}>{earned?'Ready':'Grant'}</button></td></tr>); })}</tbody></table></div></div>
                   <div className="lg:col-span-5 bg-indigo-600 p-6 rounded-2xl text-white shadow-xl relative overflow-hidden flex flex-col"><div className="absolute top-0 right-0 p-4 opacity-10"><Trophy size={80}/></div><h3 className="font-black italic uppercase text-[10px] tracking-widest mb-4 opacity-60">Earned Assets ({earnedAchs.length})</h3><div className="space-y-1 overflow-auto flex-1 max-h-[500px]">{earnedAchs.map(ua=>{ const tpl=achievements.find(a=>a.id===ua.achievement_id); return(<div key={ua.instance_id} className="bg-white/10 p-3 rounded-xl flex items-center justify-between group border border-white/5"><div className="flex items-center gap-3"><Award size={14} className="text-white/40"/><span className="font-black text-[10px] uppercase">{tpl?.name}</span></div><button onClick={()=>handleAchievementAction('revoke',{instanceId:ua.instance_id})} className="p-1 text-white/20 hover:text-red-400 transition-all"><Trash2 size={14}/></button></div>); })}</div></div>
                </div>
             ) }

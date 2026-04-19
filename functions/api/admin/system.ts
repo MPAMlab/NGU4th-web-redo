@@ -2,10 +2,10 @@ export const onRequest: PagesFunction<{
   DB: D1Database;
 }> = async ({ request, env }) => {
   const cookieHeader = request.headers.get("Cookie") || "";
-  const match = cookieHeader.match(/auth_token=([^;]+)/);
-  if (!match) return new Response("Unauthorized", { status: 401 });
+  const matchToken = cookieHeader.match(/auth_token=([^;]+)/);
+  if (!matchToken) return new Response("Unauthorized", { status: 401 });
 
-  const idToken = match[1];
+  const idToken = matchToken[1];
   let adminId: string;
   try {
     const payload = JSON.parse(atob(idToken.split(".")[1]));
@@ -21,16 +21,39 @@ export const onRequest: PagesFunction<{
 
   if (request.method === "GET") {
     const state = await env.DB.prepare("SELECT * FROM ngu4th_system_state").all();
-    const result: any = {};
-    state.results.forEach((row: any) => { result[row.key] = row.value; });
-    return new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json" } });
+    const games = await env.DB.prepare("SELECT * FROM ngu4th_games ORDER BY created_at DESC").all();
+    
+    // Map to simple object
+    const config: any = {};
+    state.results.forEach((s: any) => config[s.key] = s.value);
+
+    return new Response(JSON.stringify({ config, games: games.results }), {
+      headers: { "Content-Type": "application/json" }
+    });
   }
 
   if (request.method === "POST") {
-    const { key, value } = await request.json() as any;
-    await env.DB.prepare("INSERT OR REPLACE INTO ngu4th_system_state (key, value) VALUES (?, ?)")
-      .bind(key, value).run();
-    return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+    const body = await request.json() as any;
+    const { key, value, action, name, gameId } = body;
+    
+    if (action === 'create_game') {
+      await env.DB.prepare("UPDATE ngu4th_games SET status = 'archived' WHERE status = 'active'").run();
+      await env.DB.prepare("INSERT INTO ngu4th_games (name, status) VALUES (?, 'active')").bind(name).run();
+      // Also clear active_match_id in system state
+      await env.DB.prepare("INSERT OR REPLACE INTO ngu4th_system_state (key, value) VALUES ('active_match_id', NULL)").run();
+    } else if (action === 'archive_game') {
+      await env.DB.prepare("UPDATE ngu4th_games SET status = 'archived' WHERE id = ?").bind(gameId).run();
+    } else if (action === 'delete_game') {
+      // Logic for safe delete can be complex, for now simple:
+      await env.DB.prepare("DELETE FROM ngu4th_games WHERE id = ?").bind(gameId).run();
+    } else if (key) {
+      await env.DB.prepare("INSERT OR REPLACE INTO ngu4th_system_state (key, value) VALUES (?, ?)")
+        .bind(key, value).run();
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { "Content-Type": "application/json" }
+    });
   }
 
   return new Response("Method not allowed", { status: 405 });

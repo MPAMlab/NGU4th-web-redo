@@ -28,21 +28,23 @@ export const onRequest: PagesFunction<{
       return new Response("Missing required fields", { status: 400 });
     }
 
-    // Get match info to get player IDs
+    // Get match info to get player IDs and game ID
     const match: any = await env.DB.prepare("SELECT * FROM ngu4th_matches WHERE id = ?").bind(matchId).first();
+    if (!match) return new Response("Match not found", { status: 404 });
 
     // Helper to calculate, insert and check achievements
     const commitRound = async (playerId: string, team: string, data: any) => {
       const totalScore = parseFloat(data.baseScore) * (parseFloat(data.multiplier) || 1);
       
       await env.DB.prepare(`
-        INSERT INTO ngu4th_rounds (match_id, player_id, team, round_number, base_score, multiplier, exponent, total_score, round_type, tarot_id, poker_hand, active_fake_cards)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO ngu4th_rounds (match_id, player_id, team, round_number, base_score, multiplier, exponent, total_score, round_type, tarot_id, poker_hand, active_fake_cards, game_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         matchId, playerId, team, 
         roundType === 'red_pick' ? 1 : 2, 
         data.baseScore, data.multiplier, 1.0, 
-        totalScore, roundType, data.tarotId || null, data.hand, data.fakeCards || null
+        totalScore, roundType, data.tarotId || null, data.hand, data.fakeCards || null,
+        match.game_id
       ).run();
 
       // HOOK: Check achievements for score
