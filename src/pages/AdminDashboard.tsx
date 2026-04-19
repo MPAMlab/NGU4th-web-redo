@@ -119,12 +119,12 @@ export const AdminDashboard = () => {
       if (action === 'set_team') body.team = value;
       if (action === 'set_joker') body.jokerCardId = value;
 
-      await fetch('/api/admin/registration', {
+      const res = await fetch('/api/admin/registration', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      fetchData(true);
+      if (res.ok) fetchData(true);
     } catch (e) { alert("更新失败"); }
   };
 
@@ -237,7 +237,7 @@ export const AdminDashboard = () => {
     } catch (e) { alert("存档失败"); }
   };
 
-  if (loading) return <div className="text-center p-20 font-black animate-pulse text-2xl tracking-widest">NGU4th 后台初始化中...</div>;
+  if (loading) return <div className="text-center p-20 font-black animate-pulse text-2xl tracking-widest uppercase">Initializing Core...</div>;
 
   const redPool = members.filter(m => m.is_registered === 1 && m.team === 'red');
   const bluePool = members.filter(m => m.is_registered === 1 && m.team === 'blue');
@@ -251,7 +251,7 @@ export const AdminDashboard = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-4 border-primary pb-6">
         <div>
           <h1 className="text-6xl font-black tracking-tighter italic text-primary leading-none uppercase">NGU4th ADMIN</h1>
-          <p className="text-muted-foreground font-black uppercase tracking-[0.2em] text-[10px] mt-1">Global Match Control Unit v6.0</p>
+          <p className="text-muted-foreground font-black uppercase tracking-[0.2em] text-[10px] mt-1">Global Match Control Unit v6.1</p>
         </div>
         <div className="flex gap-4">
           <a href="/live" target="_blank" className="bg-green-600 text-white px-6 py-2 rounded-xl font-black hover:bg-green-700 transition-all shadow-lg text-sm">
@@ -292,7 +292,6 @@ export const AdminDashboard = () => {
                     onChange={(e)=>handleSetTeamExponent('red', e.target.value)}
                     className="flex-1 bg-muted p-4 rounded-xl font-black text-2xl outline-none focus:ring-4 ring-red-600/20"
                   />
-                  <div className="text-xs font-bold text-muted-foreground self-center uppercase">Value affects overall summation</div>
                 </div>
              </div>
              <div>
@@ -304,7 +303,6 @@ export const AdminDashboard = () => {
                     onChange={(e)=>handleSetTeamExponent('blue', e.target.value)}
                     className="flex-1 bg-muted p-4 rounded-xl font-black text-2xl outline-none focus:ring-4 ring-blue-600/20"
                   />
-                  <div className="text-xs font-bold text-muted-foreground self-center uppercase">Exponential growth factor</div>
                 </div>
              </div>
           </div>
@@ -326,8 +324,10 @@ export const AdminDashboard = () => {
                           <p className="text-[9px] text-muted-foreground mt-1 font-bold">{m.email}</p>
                         </div>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                          <button onClick={() => handleReorder(m.kinde_id, 'up')} className="bg-background p-2 rounded-lg border shadow-sm hover:bg-primary hover:text-white">▲</button>
-                          <button onClick={() => handleReorder(m.kinde_id, 'down')} className="bg-background p-2 rounded-lg border shadow-sm hover:bg-primary hover:text-white">▼</button>
+                          <button onClick={() => handleReorder(m.kinde_id, 'up')} className="bg-background p-2 rounded-lg border shadow-sm hover:bg-primary hover:text-white" title="上移">▲</button>
+                          <button onClick={() => handleReorder(m.kinde_id, 'down')} className="bg-background p-2 rounded-lg border shadow-sm hover:bg-primary hover:text-white" title="下移">▼</button>
+                          <button onClick={() => handleMemberAction(m.kinde_id, 'set_team', team === 'red' ? 'blue' : 'red')} className="bg-background p-2 rounded-lg border shadow-sm hover:bg-orange-500 hover:text-white text-[10px] font-black uppercase">Switch</button>
+                          <button onClick={() => handleMemberAction(m.kinde_id, 'remove_registration', null)} className="bg-background p-2 rounded-lg border shadow-sm hover:bg-destructive hover:text-white text-[10px] font-black text-destructive">Kick</button>
                         </div>
                       </div>
                       <div className="grid grid-cols-1 gap-2">
@@ -343,12 +343,56 @@ export const AdminDashboard = () => {
                       </div>
                     </div>
                   ))}
-                  {members.filter(m => m.team === team && m.is_registered === 1).length === 0 && (
-                    <div className="text-center py-20 text-muted-foreground font-black italic opacity-20 uppercase">Deployment empty</div>
-                  )}
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* GLOBAL ROSTER / CRUD */}
+          <div className="bg-card rounded-[2.5rem] shadow-2xl border border-white/5 overflow-hidden">
+            <div className="bg-muted/50 p-6 border-b flex justify-between items-center">
+              <h3 className="text-xl font-black italic uppercase tracking-widest">全员名单与准入管理 (Global Roster)</h3>
+              <span className="text-[10px] font-black bg-primary/20 text-primary px-4 py-1 rounded-full">TOTAL: {members.length} USERS</span>
+            </div>
+            <div className="overflow-x-auto">
+               <table className="w-full text-left text-sm">
+                 <thead className="bg-muted/30 opacity-50 text-[10px] font-black uppercase tracking-widest border-b">
+                   <tr>
+                     <th className="px-6 py-4">Operator</th>
+                     <th className="px-6 py-4 text-center">Status</th>
+                     <th className="px-6 py-4 text-right">Quick Deployment</th>
+                   </tr>
+                 </thead>
+                 <tbody className="divide-y divide-white/5">
+                   {members.map(m => (
+                     <tr key={m.kinde_id} className="hover:bg-muted/20 transition-all">
+                       <td className="px-6 py-4">
+                          <p className="font-bold">{m.username}</p>
+                          <p className="text-[10px] text-muted-foreground">{m.email}</p>
+                       </td>
+                       <td className="px-6 py-4 text-center">
+                          {m.is_registered ? (
+                            <span className={`px-3 py-1 rounded-md text-[10px] font-black uppercase ${m.team === 'red' ? 'bg-red-600/20 text-red-600' : 'bg-blue-600/20 text-blue-600'}`}>
+                              In Field ({m.team})
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground opacity-30 text-[10px] font-bold italic">RESERVE</span>
+                          )}
+                       </td>
+                       <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                             <button onClick={() => handleMemberAction(m.kinde_id, 'set_team', 'red')} className="px-3 py-1 bg-red-600 text-white rounded-lg text-[10px] font-black hover:bg-red-700 transition-all uppercase">To Red</button>
+                             <button onClick={() => handleMemberAction(m.kinde_id, 'set_team', 'blue')} className="px-3 py-1 bg-blue-600 text-white rounded-lg text-[10px] font-black hover:bg-blue-700 transition-all uppercase">To Blue</button>
+                             {m.is_registered === 1 && (
+                               <button onClick={() => handleMemberAction(m.kinde_id, 'remove_registration', null)} className="px-3 py-1 bg-neutral-800 text-white rounded-lg text-[10px] font-black hover:bg-black transition-all uppercase">Detach</button>
+                             )}
+                          </div>
+                       </td>
+                     </tr>
+                   ))}
+                 </tbody>
+               </table>
+            </div>
           </div>
         </div>
       )}
@@ -433,7 +477,7 @@ export const AdminDashboard = () => {
                         ) : (
                           <button onClick={()=>handleSetActiveMatch(m.id.toString())} className="bg-primary text-primary-foreground px-6 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg hover:scale-105">Engage</button>
                         )}
-                        <button onClick={()=>{if(confirm('Delete?')) fetchData(true)}} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive font-black text-[10px] transition-all">SCRAP</button>
+                        <button onClick={async ()=>{ if(confirm('Scrap?')) { await fetch('/api/admin/matches',{method:'POST',body:JSON.stringify({action:'delete',matchId:m.id})}); fetchData(true); } }} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive font-black text-[10px] transition-all">SCRAP</button>
                       </div>
                    </div>
                  ))}
@@ -479,9 +523,7 @@ export const AdminDashboard = () => {
                          {activeMatch.round_1_status === 'completed' && <span className="bg-white text-red-600 px-6 py-2 rounded-full font-black uppercase tracking-widest shadow-xl">Archived</span>}
                       </div>
                       <form onSubmit={(e)=>handleCommitRound(e, 'red_pick')} className="bg-card p-10 rounded-b-[3rem] border-x-4 border-b-4 border-red-600/10 shadow-2xl space-y-12">
-                         {/* Form Content */}
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                            {/* Red Side (Active Mult) */}
                             <div className="space-y-6">
                                <div className="flex justify-between items-center border-b-2 border-red-600/20 pb-3">
                                   <h4 className="font-black text-red-600 text-xl uppercase italic">{activeMatch.red_player_name}</h4>
@@ -504,8 +546,6 @@ export const AdminDashboard = () => {
                                </div>
                                <input name="red_hand" placeholder="POKER HAND (e.g. Full House)" className="w-full bg-muted p-3 rounded-xl font-black text-xs uppercase outline-none border-none" />
                             </div>
-
-                            {/* Blue Side (Locked Mult) */}
                             <div className="space-y-6 opacity-70">
                                <div className="flex justify-between items-center border-b-2 border-blue-600/20 pb-3">
                                   <h4 className="font-black text-blue-600 text-xl uppercase italic">{activeMatch.blue_player_name}</h4>
@@ -546,7 +586,6 @@ export const AdminDashboard = () => {
                       </div>
                       <form onSubmit={(e)=>handleCommitRound(e, 'blue_pick')} className="bg-card p-10 rounded-b-[3rem] border-x-4 border-b-4 border-blue-600/10 shadow-2xl space-y-12">
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                            {/* Red Side (Locked Mult) */}
                             <div className="space-y-6 opacity-70">
                                <div className="flex justify-between items-center border-b-2 border-red-600/20 pb-3">
                                   <h4 className="font-black text-red-600 text-xl uppercase italic">{activeMatch.red_player_name}</h4>
@@ -568,8 +607,6 @@ export const AdminDashboard = () => {
                                </div>
                                <input name="red_hand" placeholder="POKER HAND" className="w-full bg-muted p-3 rounded-xl font-black text-xs uppercase outline-none border-none" />
                             </div>
-
-                            {/* Blue Side (Active Mult) */}
                             <div className="space-y-6">
                                <div className="flex justify-between items-center border-b-2 border-blue-600/20 pb-3">
                                   <h4 className="font-black text-blue-600 text-xl uppercase italic">{activeMatch.blue_player_name}</h4>
