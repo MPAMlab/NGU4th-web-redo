@@ -77,7 +77,6 @@ export const AdminDashboard = () => {
   const [minigames, setMinigames] = useState<Minigame[]>([]);
   const [participants, setParticipants] = useState<any[]>([]);
   
-  // Local state for live form toggles
   const [applyRedJoker, setApplyRedJoker] = useState(true);
   const [applyBlueJoker, setApplyBlueJoker] = useState(true);
 
@@ -96,7 +95,7 @@ export const AdminDashboard = () => {
         fetch('/api/admin/minigames')
       ]);
 
-      if (!achRes.ok || !regRes.ok || !matchRes.ok || !cardRes.ok || !sysRes.ok || !miniRes.ok) throw new Error('获取数据失败');
+      if (!achRes.ok || !regRes.ok || !matchRes.ok || !cardRes.ok || !sysRes.ok || !miniRes.ok) throw new Error('获取同步数据失败');
 
       const [achData, regData, matchData, cardData, sysData, miniData] = await Promise.all([
         achRes.json(),
@@ -110,7 +109,6 @@ export const AdminDashboard = () => {
       setAchievements(achData.achievements);
       setUserAchievements(achData.userAchievements);
       
-      // Enrich members with Joker data
       const enrichedMembers = (regData as Member[]).map(m => {
          const joker = (cardData.library as Card[]).find(c => c.id === m.joker_card_id);
          return {
@@ -144,7 +142,6 @@ export const AdminDashboard = () => {
     fetchData(true); 
   };
 
-  // --- Actions ---
   const handleAchievementToggle = async (kinde_id: string, achievement_id: string, hasAchievement: boolean) => {
     const action = hasAchievement ? 'revoke' : 'grant';
     try {
@@ -154,7 +151,7 @@ export const AdminDashboard = () => {
         body: JSON.stringify({ targetKindeId: kinde_id, achievementId: achievement_id, action })
       });
       fetchData(true);
-    } catch (e) { alert("操作失败"); }
+    } catch (e) { alert("勋章操作失败"); }
   };
 
   const handleMemberAction = async (targetKindeId: string, action: string, value: any) => {
@@ -169,7 +166,7 @@ export const AdminDashboard = () => {
         body: JSON.stringify(body)
       });
       if (res.ok) fetchData(true);
-    } catch (e) { alert("更新失败"); }
+    } catch (e) { alert("选手操作失败"); }
   };
 
   const handleReorder = async (kindeId: string, direction: 'up' | 'down') => {
@@ -192,11 +189,11 @@ export const AdminDashboard = () => {
         body: JSON.stringify({ action: 'reorder', mapping })
       });
       fetchData(true);
-    } catch (e) { alert("排序失败"); }
+    } catch (e) { alert("排序保存失败"); }
   };
 
   const handleRandomJoker = async () => {
-    if (!confirm("确定要为所有选手重新随机分发小丑牌吗？")) return;
+    if (!confirm("确定要为所有选手重新随机分发小丑牌吗？这会覆盖现有的分配。")) return;
     try {
       await fetch('/api/admin/cards', {
         method: 'POST',
@@ -204,7 +201,7 @@ export const AdminDashboard = () => {
         body: JSON.stringify({ action: 'random_joker' })
       });
       fetchData(true);
-    } catch (e) { alert("随机分配失败"); }
+    } catch (e) { alert("随机分发过程出错"); }
   };
 
   const handleSetTeamExponent = async (team: 'red' | 'blue', val: string) => {
@@ -215,7 +212,7 @@ export const AdminDashboard = () => {
         body: JSON.stringify({ key: `${team}_exponent`, value: val })
       });
       fetchData(true);
-    } catch (e) { alert("更新系数失败"); }
+    } catch (e) { alert("次方系数更新失败"); }
   };
 
   const handleCreateMatch = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -231,7 +228,7 @@ export const AdminDashboard = () => {
         body: JSON.stringify({ action: 'create', redPlayerId, bluePlayerId, orderIndex: matches.length })
       });
       fetchData(true);
-    } catch (e) { alert("创建失败"); }
+    } catch (e) { alert("创建赛程对阵失败"); }
   };
 
   const handleSetActiveMatch = async (matchId: string | null) => {
@@ -243,14 +240,13 @@ export const AdminDashboard = () => {
       });
       fetchData(true);
       if (matchId) setActiveTab('live');
-    } catch (e) { alert("挂载失败"); }
+    } catch (e) { alert("挂载对局失败"); }
   };
 
   const handleCommitRound = async (e: React.FormEvent<HTMLFormElement>, roundType: 'red_pick' | 'blue_pick') => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
-    // Get checked fake cards
     const redFakeCards = Array.from(formData.getAll('red_fake_cards')).join(',');
     const blueFakeCards = Array.from(formData.getAll('blue_fake_cards')).join(',');
 
@@ -282,10 +278,10 @@ export const AdminDashboard = () => {
         body: JSON.stringify(payload)
       });
       if (res.ok) {
-        alert("本轮数据已存档！");
+        alert("本轮数据已正式存档！");
         fetchData(true);
       }
-    } catch (e) { alert("存档失败"); }
+    } catch (e) { alert("记录分数失败"); }
   };
 
   const handleCreateMinigame = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -309,7 +305,7 @@ export const AdminDashboard = () => {
       });
       fetchData(true);
       (e.target as HTMLFormElement).reset();
-    } catch (e) { alert("创建失败"); }
+    } catch (e) { alert("小游戏创建失败"); }
   };
 
   const handleMinigameStatus = async (id: number, action: 'start' | 'finish', winner_id?: string | null) => {
@@ -320,10 +316,16 @@ export const AdminDashboard = () => {
         body: JSON.stringify({ action, id, winner_id })
       });
       fetchData(true);
-    } catch (e) { alert("操作失败"); }
+    } catch (e) { alert("状态变更失败"); }
   };
 
-  if (loading) return <div className="text-center p-20 font-black animate-pulse text-2xl tracking-widest uppercase">Initializing Core...</div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-screen bg-background gap-4">
+      <div className="w-16 h-16 border-8 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <p className="font-black text-2xl tracking-[0.5em] animate-pulse uppercase">Initializing Core...</p>
+      <p className="text-muted-foreground font-bold">NGU4th 管理内核启动中</p>
+    </div>
+  );
 
   const activeMatch = matches.find(m => m.id.toString() === systemState.active_match_id);
   const jokers = cardLibrary.filter(c => c.type === '小丑牌');
@@ -341,12 +343,12 @@ export const AdminDashboard = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-4 border-primary pb-6">
         <div>
-          <h1 className="text-6xl font-black tracking-tighter italic text-primary leading-none uppercase">NGU4th ADMIN</h1>
-          <p className="text-muted-foreground font-black uppercase tracking-[0.2em] text-[10px] mt-1">Global Match Control Unit v6.3</p>
+          <h1 className="text-6xl font-black tracking-tighter italic text-primary leading-none uppercase">NGU4th 管理后台</h1>
+          <p className="text-muted-foreground font-black uppercase tracking-[0.2em] text-[10px] mt-1">Global Match Control Unit v7.0</p>
         </div>
         <div className="flex gap-4">
           <a href="/live" target="_blank" className="bg-green-600 text-white px-6 py-2 rounded-xl font-black hover:bg-green-700 transition-all shadow-lg text-sm">
-            打开直播大屏 SPECTATOR
+            🖥️ 打开直播大屏
           </a>
           <a href="/dashboard" className="bg-secondary text-secondary-foreground px-6 py-2 rounded-full font-bold hover:bg-secondary/80 transition-all shadow-md">
             返回个人主页
@@ -364,7 +366,7 @@ export const AdminDashboard = () => {
               activeTab === tab ? 'bg-background shadow-xl text-primary scale-105 border-2 border-primary/20' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            {tab === 'members' ? '选手与队伍' : tab === 'achievements' ? '勋章发放' : tab === 'matches' ? '对阵赛程' : tab === 'minigames' ? '🎮 小游戏' : '🔴 计分台'}
+            {tab === 'members' ? '选手与队伍' : tab === 'achievements' ? '勋章管理' : tab === 'matches' ? '对阵与赛程' : tab === 'minigames' ? '🎮 小游戏' : '🔴 计分工作台'}
           </button>
         ))}
       </div>
@@ -374,7 +376,7 @@ export const AdminDashboard = () => {
         <div className="space-y-10">
           <div className="bg-card p-8 rounded-[2.5rem] border shadow-xl grid grid-cols-1 md:grid-cols-2 gap-10">
              <div>
-                <h3 className="text-xl font-black italic text-red-600 uppercase mb-4 tracking-tight">红队全局永久次方 (假卡)</h3>
+                <h3 className="text-xl font-black italic text-red-600 uppercase mb-4 tracking-tight">🔴 红队全局永久次方 (来自假卡)</h3>
                 <input 
                   type="number" step="0.01" 
                   value={systemState.red_exponent || '1.0'} 
@@ -383,7 +385,7 @@ export const AdminDashboard = () => {
                 />
              </div>
              <div>
-                <h3 className="text-xl font-black italic text-blue-600 uppercase mb-4 tracking-tight">蓝队全局永久次方 (假卡)</h3>
+                <h3 className="text-xl font-black italic text-blue-600 uppercase mb-4 tracking-tight">🔵 蓝队全局永久次方 (来自假卡)</h3>
                 <input 
                   type="number" step="0.01" 
                   value={systemState.blue_exponent || '1.0'} 
@@ -397,8 +399,8 @@ export const AdminDashboard = () => {
             {['red', 'blue'].map(team => (
               <div key={team} className={`bg-card rounded-[2.5rem] shadow-2xl border-4 ${team === 'red' ? 'border-red-600/20' : 'border-blue-600/20'} overflow-hidden`}>
                 <div className={`p-6 ${team === 'red' ? 'bg-red-600' : 'bg-blue-600'} text-white flex justify-between items-center`}>
-                  <h3 className="text-2xl font-black italic tracking-widest uppercase">{team} FORCE ROSTER</h3>
-                  <button onClick={handleRandomJoker} className="bg-white/20 hover:bg-white/30 p-2 rounded-lg text-xs font-black uppercase">🎲 Random Jokers</button>
+                  <h3 className="text-2xl font-black italic tracking-widest uppercase">{team === 'red' ? '红队' : '蓝队'} 出场名单</h3>
+                  <button onClick={handleRandomJoker} className="bg-white/20 hover:bg-white/30 p-2 rounded-lg text-xs font-black uppercase tracking-tighter">🎲 随机分发小丑牌</button>
                 </div>
                 <div className="p-4 space-y-4">
                   {members.filter(m => m.team === team && m.is_registered === 1).map((m, i) => (
@@ -412,18 +414,18 @@ export const AdminDashboard = () => {
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                           <button onClick={() => handleReorder(m.kinde_id, 'up')} className="bg-background p-2 rounded-lg border shadow-sm hover:bg-primary hover:text-white" title="上移">▲</button>
                           <button onClick={() => handleReorder(m.kinde_id, 'down')} className="bg-background p-2 rounded-lg border shadow-sm hover:bg-primary hover:text-white" title="下移">▼</button>
-                          <button onClick={() => handleMemberAction(m.kinde_id, 'set_team', team === 'red' ? 'blue' : 'red')} className="bg-background p-2 rounded-lg border shadow-sm text-[10px] font-black uppercase">Switch</button>
-                          <button onClick={() => handleMemberAction(m.kinde_id, 'remove_registration', null)} className="bg-background p-2 rounded-lg border shadow-sm text-[10px] font-black text-destructive">Kick</button>
+                          <button onClick={() => handleMemberAction(m.kinde_id, 'set_team', team === 'red' ? 'blue' : 'red')} className="bg-background p-2 px-3 rounded-lg border shadow-sm text-[10px] font-black uppercase hover:bg-orange-500 hover:text-white">换队</button>
+                          <button onClick={() => handleMemberAction(m.kinde_id, 'remove_registration', null)} className="bg-background p-2 px-3 rounded-lg border shadow-sm text-[10px] font-black text-destructive hover:bg-destructive hover:text-white">移出</button>
                         </div>
                       </div>
                       <div className="grid grid-cols-1 gap-2">
-                        <label className="text-[9px] font-black uppercase tracking-widest opacity-40">Assigned Joker</label>
+                        <label className="text-[9px] font-black uppercase tracking-widest opacity-40">分配小丑牌 (Joker Card)</label>
                         <select 
                           value={m.joker_card_id || ''} 
                           onChange={(e) => handleMemberAction(m.kinde_id, 'set_joker', e.target.value ? parseInt(e.target.value) : null)}
                           className="w-full bg-background p-3 rounded-xl text-sm font-black outline-none border-2 border-white/5 focus:border-primary/50"
                         >
-                          <option value="">NO JOKER</option>
+                          <option value="">未分配小丑牌</option>
                           {jokers.map(j => <option key={j.id} value={j.id}>{j.name}</option>)}
                         </select>
                       </div>
@@ -434,15 +436,16 @@ export const AdminDashboard = () => {
             ))}
           </div>
 
+          {/* GLOBAL ROSTER / CRUD */}
           <div className="bg-card rounded-[2.5rem] shadow-2xl border border-white/5 overflow-hidden">
             <div className="bg-muted/50 p-6 border-b flex justify-between items-center">
-              <h3 className="text-xl font-black italic uppercase tracking-widest">全员名单与准入管理 (Global Roster)</h3>
-              <span className="text-[10px] font-black bg-primary/20 text-primary px-4 py-1 rounded-full">TOTAL: {members.length}</span>
+              <h3 className="text-xl font-black italic uppercase tracking-widest">全员名单与系统准入管理</h3>
+              <span className="text-[10px] font-black bg-primary/20 text-primary px-4 py-1 rounded-full">系统总用户数: {members.length}</span>
             </div>
             <div className="overflow-auto max-h-[400px]">
                <table className="w-full text-left text-sm">
                  <thead className="bg-muted/30 opacity-50 text-[10px] font-black uppercase tracking-widest border-b sticky top-0 bg-muted z-10">
-                   <tr><th className="px-6 py-4">User</th><th className="px-6 py-4 text-center">Status</th><th className="px-6 py-4 text-right">Quick Deployment</th></tr>
+                   <tr><th className="px-6 py-4">用户信息</th><th className="px-6 py-4 text-center">当前状态</th><th className="px-6 py-4 text-right">快速分配</th></tr>
                  </thead>
                  <tbody className="divide-y divide-white/5">
                    {members.map(m => (
@@ -453,17 +456,19 @@ export const AdminDashboard = () => {
                        </td>
                        <td className="px-6 py-4 text-center">
                           {m.is_registered ? (
-                            <span className={`px-3 py-1 rounded-md text-[10px] font-black uppercase ${m.team === 'red' ? 'bg-red-600/20 text-red-600' : 'bg-blue-600/20 text-blue-600'}`}>In Field ({m.team})</span>
+                            <span className={`px-3 py-1 rounded-md text-[10px] font-black uppercase ${m.team === 'red' ? 'bg-red-600/20 text-red-600' : 'bg-blue-600/20 text-blue-600'}`}>
+                              已入队 ({m.team === 'red' ? '红' : '蓝'})
+                            </span>
                           ) : (
-                            <span className="text-muted-foreground opacity-30 text-[10px] font-bold italic uppercase tracking-widest">Reserve</span>
+                            <span className="text-muted-foreground opacity-30 text-[10px] font-bold italic uppercase tracking-widest">预备役 Reserve</span>
                           )}
                        </td>
                        <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2">
-                             <button onClick={() => handleMemberAction(m.kinde_id, 'set_team', 'red')} className="px-3 py-1 bg-red-600 text-white rounded-lg text-[10px] font-black hover:bg-red-700 uppercase transition-all">To Red</button>
-                             <button onClick={() => handleMemberAction(m.kinde_id, 'set_team', 'blue')} className="px-3 py-1 bg-blue-600 text-white rounded-lg text-[10px] font-black hover:bg-blue-700 uppercase transition-all">To Blue</button>
+                             <button onClick={() => handleMemberAction(m.kinde_id, 'set_team', 'red')} className="px-3 py-1 bg-red-600 text-white rounded-lg text-[10px] font-black hover:bg-red-700 uppercase transition-all">设为红队</button>
+                             <button onClick={() => handleMemberAction(m.kinde_id, 'set_team', 'blue')} className="px-3 py-1 bg-blue-600 text-white rounded-lg text-[10px] font-black hover:bg-blue-700 uppercase transition-all">设为蓝队</button>
                              {m.is_registered === 1 && (
-                               <button onClick={() => handleMemberAction(m.kinde_id, 'remove_registration', null)} className="px-3 py-1 bg-neutral-800 text-white rounded-lg text-[10px] font-black hover:bg-black uppercase transition-all">Detach</button>
+                               <button onClick={() => handleMemberAction(m.kinde_id, 'remove_registration', null)} className="px-3 py-1 bg-neutral-800 text-white rounded-lg text-[10px] font-black hover:bg-black uppercase transition-all">取消报名</button>
                              )}
                           </div>
                        </td>
@@ -480,42 +485,42 @@ export const AdminDashboard = () => {
       {activeTab === 'minigames' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
            <div className="lg:col-span-1 bg-card p-8 rounded-[3rem] border-4 border-purple-600/10 shadow-2xl space-y-8">
-              <h3 className="text-xl font-black italic uppercase tracking-widest text-purple-600">发布新游戏</h3>
+              <h3 className="text-xl font-black italic uppercase tracking-widest text-purple-600">发布小游戏活动</h3>
               <form onSubmit={handleCreateMinigame} className="space-y-6">
                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase opacity-50">标题</label>
-                    <input name="title" required className="w-full bg-muted p-4 rounded-xl font-bold" />
+                    <label className="text-[10px] font-black uppercase opacity-50">活动标题</label>
+                    <input name="title" placeholder="例如：打砖块接力" required className="w-full bg-muted p-4 rounded-xl font-bold" />
                  </div>
                  <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase opacity-50">一句话简介</label>
-                    <input name="short_desc" className="w-full bg-muted p-4 rounded-xl font-bold text-sm" />
+                    <input name="short_desc" placeholder="简短描述游戏玩法" className="w-full bg-muted p-4 rounded-xl font-bold text-sm" />
                  </div>
                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                       <label className="text-[10px] font-black uppercase opacity-50">日期</label>
+                       <label className="text-[10px] font-black uppercase opacity-50">预定日期</label>
                        <input name="start_date" type="date" required className="w-full bg-muted p-4 rounded-xl font-bold" />
                     </div>
                     <div className="space-y-2">
-                       <label className="text-[10px] font-black uppercase opacity-50">时间</label>
+                       <label className="text-[10px] font-black uppercase opacity-50">开始时间</label>
                        <input name="start_time" type="time" required className="w-full bg-muted p-4 rounded-xl font-bold" />
                     </div>
                  </div>
                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase opacity-50">最大人数</label>
+                    <label className="text-[10px] font-black uppercase opacity-50">参与人数上限</label>
                     <input name="max_players" type="number" defaultValue="10" className="w-full bg-muted p-4 rounded-xl font-bold" />
                  </div>
                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase opacity-50">详细描述</label>
-                    <textarea name="detailed_desc" className="w-full bg-muted p-4 rounded-xl font-bold text-xs h-32" />
+                    <label className="text-[10px] font-black uppercase opacity-50">详细规则描述</label>
+                    <textarea name="detailed_desc" placeholder="选手在此可以看到更详细的活动说明..." className="w-full bg-muted p-4 rounded-xl font-bold text-xs h-32" />
                  </div>
                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase opacity-50">奖励假卡</label>
+                    <label className="text-[10px] font-black uppercase opacity-50">获胜方奖励假卡</label>
                     <select name="fake_card_id" required className="w-full bg-muted p-4 rounded-xl font-bold outline-none border-none">
-                       <option value="">请选择奖励卡牌...</option>
+                       <option value="">请选择要作为奖励的卡牌...</option>
                        {fakeCards.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                  </div>
-                 <button type="submit" className="w-full bg-purple-600 text-white font-black py-5 rounded-[1.5rem] text-xl shadow-xl uppercase">发布活动</button>
+                 <button type="submit" className="w-full bg-purple-600 text-white font-black py-5 rounded-[1.5rem] text-xl shadow-xl uppercase italic">发布小游戏并开始招募</button>
               </form>
            </div>
            <div className="lg:col-span-2 space-y-6">
@@ -524,42 +529,42 @@ export const AdminDashboard = () => {
                    <div className="flex-1 space-y-4">
                       <div className="flex items-center gap-3">
                         <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase ${g.status === 'recruiting' ? 'bg-green-600' : g.status === 'active' ? 'bg-orange-600' : 'bg-neutral-600'} text-white`}>
-                           {g.status}
+                           {g.status === 'recruiting' ? '招募中' : g.status === 'active' ? '进行中' : '已结束'}
                         </span>
                         <h3 className="text-2xl font-black uppercase tracking-tighter italic">{g.title}</h3>
                       </div>
                       <p className="text-sm font-bold text-muted-foreground italic border-l-4 border-purple-600 pl-4">{g.short_desc}</p>
                       <div className="grid grid-cols-2 gap-4 text-[10px] font-black uppercase opacity-50">
-                         <p>🕒 {g.start_date} {g.start_time}</p>
-                         <p>👥 {g.participant_count} / {g.max_players} JOINED</p>
-                         <p>🎁 REWARD: {g.fake_card_name}</p>
-                         {g.winner_id && <p className="text-primary">🏆 WINNER: {g.winner_name}</p>}
+                         <p>🕒 时间: {g.start_date} {g.start_time}</p>
+                         <p>👥 报名进度: {g.participant_count} / {g.max_players}</p>
+                         <p>🎁 目标奖励: <span className="text-primary italic font-black">{g.fake_card_name}</span></p>
+                         {g.winner_id && <p className="text-green-500">🏆 最终获胜: {g.winner_name}</p>}
                       </div>
                    </div>
                    <div className="flex flex-col gap-2 justify-center min-w-[200px]">
                       {g.status === 'recruiting' && (
-                        <button onClick={() => handleMinigameStatus(g.id, 'start')} className="w-full bg-orange-600 text-white font-black py-3 rounded-xl shadow-lg">START GAME</button>
+                        <button onClick={() => handleMinigameStatus(g.id, 'start')} className="w-full bg-orange-600 text-white font-black py-3 rounded-xl shadow-lg hover:scale-105 transition-all">开始游戏 (截止报名)</button>
                       )}
                       {g.status === 'active' && (
                         <div className="space-y-2">
-                           <label className="text-[10px] font-black uppercase opacity-50">Select Winner</label>
+                           <label className="text-[10px] font-black uppercase opacity-50">判定获胜者</label>
                            <select 
                              className="w-full bg-muted p-3 rounded-xl font-bold text-xs"
                              onChange={(e) => handleMinigameStatus(g.id, 'finish', e.target.value)}
                            >
-                              <option value="">No Winner (Draw)</option>
+                              <option value="">无获胜者 (平局/流局)</option>
                               {participants.filter(p => p.minigame_id === g.id).map(p => (
-                                <option key={p.user_id} value={p.user_id}>{p.username} ({p.team})</option>
+                                <option key={p.user_id} value={p.user_id}>{p.username} ({p.team === 'red' ? '红' : '蓝'})</option>
                               ))}
                            </select>
-                           <p className="text-[8px] font-bold text-muted-foreground">Selecting a winner will automatically grant the reward to their team.</p>
+                           <p className="text-[8px] font-bold text-muted-foreground leading-tight">选择获胜者后，假卡奖励将自动发放至其所属队伍资产库。</p>
                         </div>
                       )}
-                      <button onClick={async () => { if(confirm('Delete?')) { await fetch('/api/admin/minigames',{method:'POST',body:JSON.stringify({action:'delete',id:g.id})}); fetchData(true); } }} className="text-muted-foreground font-black text-[10px] hover:text-destructive transition-all">TERMINATE</button>
+                      <button onClick={async () => { if(confirm('确定要删除吗？')) { await fetch('/api/admin/minigames',{method:'POST',body:JSON.stringify({action:'delete',id:g.id})}); fetchData(true); } }} className="text-muted-foreground font-black text-[10px] hover:text-destructive transition-all uppercase tracking-widest mt-4">终止并撤回项目</button>
                    </div>
                 </div>
               ))}
-              {minigames.length === 0 && <div className="text-center py-20 bg-muted/20 rounded-[3rem] border-4 border-dashed border-white/5 italic opacity-20 font-black">NO MINIGAME DATA</div>}
+              {minigames.length === 0 && <div className="text-center py-20 bg-muted/20 rounded-[3rem] border-4 border-dashed border-white/5 italic opacity-20 font-black">当前无小游戏部署数据</div>}
            </div>
         </div>
       )}
@@ -569,17 +574,23 @@ export const AdminDashboard = () => {
         <div className="space-y-12">
            {!activeMatch ? (
              <div className="bg-card p-32 rounded-[4rem] border-8 border-dashed border-muted text-center space-y-8 animate-pulse">
-                <div className="text-9xl grayscale">📡</div>
-                <h2 className="text-5xl font-black uppercase italic tracking-tighter opacity-30">Awaiting Engagement</h2>
+                <div className="text-9xl grayscale opacity-10">📡</div>
+                <h2 className="text-5xl font-black uppercase italic tracking-tighter opacity-30 text-muted-foreground">计分工作台待机中</h2>
+                <p className="font-bold text-muted-foreground uppercase tracking-[0.3em]">Awaiting Engagement Assignment</p>
              </div>
            ) : (
-             <div className="space-y-12">
+             <div className="space-y-12 animate-in fade-in zoom-in duration-500">
                 <div className="bg-card p-10 rounded-[3.5rem] shadow-2xl border-x-8 border-primary flex justify-between items-center relative overflow-hidden">
                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-600 via-primary to-blue-600"></div>
                    <div>
-                      <h2 className="text-5xl font-black italic tracking-tighter uppercase leading-none">{activeMatch.red_player_name} <span className="opacity-10 px-4">VS</span> {activeMatch.blue_player_name}</h2>
+                      <div className="text-[10px] font-black uppercase tracking-[0.4em] text-primary mb-2 animate-pulse italic">🔴 实时计分链路已建立 DATA STREAM ACTIVE</div>
+                      <h2 className="text-5xl font-black italic tracking-tighter uppercase leading-none">
+                        {activeMatch.red_player_name} <span className="opacity-10 px-4">VS</span> {activeMatch.blue_player_name}
+                      </h2>
                    </div>
-                   <button onClick={() => handleSetActiveMatch(null)} className="bg-neutral-900 text-white px-12 py-5 rounded-3xl font-black hover:bg-black transition-all">FINISH MATCH</button>
+                   <button onClick={() => handleSetActiveMatch(null)} className="bg-neutral-900 text-white px-12 py-5 rounded-3xl font-black hover:bg-black transition-all border-b-8 border-neutral-700 active:border-b-0 active:translate-y-2 uppercase italic tracking-widest">
+                     完结对抗 FINISH
+                   </button>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -593,90 +604,95 @@ export const AdminDashboard = () => {
                       const setUseJoker = team === 'red' ? setApplyRedJoker : setApplyBlueJoker;
 
                       return (
-                        <div key={team} className={`space-y-6 ${(idx === 0 && activeMatch.round_1_status === 'completed') || (idx === 1 && activeMatch.round_2_status === 'completed') ? 'opacity-30 grayscale pointer-events-none' : ''}`}>
-                           <div className={`p-8 rounded-t-[3rem] ${team === 'red' ? 'bg-red-600' : 'bg-blue-600'} text-white`}>
+                        <div key={team} className={`space-y-6 ${(idx === 0 && activeMatch.round_1_status === 'completed') || (idx === 1 && activeMatch.round_2_status === 'completed') ? 'opacity-20 grayscale pointer-events-none' : ''}`}>
+                           <div className={`p-8 rounded-t-[3rem] ${team === 'red' ? 'bg-red-600' : 'bg-blue-600'} text-white shadow-xl`}>
                               <h3 className="text-3xl font-black italic tracking-tighter uppercase">
-                                 ROUND {isRound1 ? '1' : '2'}: {isRound1 ? "RED'S PICK" : "BLUE'S PICK"}
+                                 ROUND {isRound1 ? '1' : '2'}: {isRound1 ? "红队自选曲 RED'S PICK" : "蓝队自选曲 BLUE'S PICK"}
                               </h3>
-                              <p className="text-[10px] font-black uppercase opacity-60 mt-1">{isHome ? "Joker Multiplier applies" : "Away - Fixed 1.0x"}</p>
+                              <p className="text-[10px] font-black uppercase opacity-60 mt-1 tracking-widest">
+                                 {isHome ? "该轮主场：允许应用小丑牌倍率" : "该轮客场：倍率固定为 1.0x"}
+                              </p>
                            </div>
-                           <form onSubmit={(e)=>handleCommitRound(e, currentRoundType)} className="bg-card p-10 rounded-b-[3rem] border-x-4 border-b-4 border-white/5 shadow-2xl space-y-8">
-                              <div className="grid grid-cols-1 gap-10">
+                           <form onSubmit={(e)=>handleCommitRound(e, currentRoundType)} className="bg-card p-10 rounded-b-[3rem] border-x-4 border-b-4 border-white/5 shadow-2xl space-y-10">
+                              <div className="space-y-10">
                                  <div className="space-y-6">
                                     <div className="flex justify-between items-center border-b-2 pb-3" style={{borderColor: team === 'red' ? 'rgba(220,38,38,0.2)' : 'rgba(37,99,235,0.2)'}}>
-                                       <h4 className={`font-black text-xl uppercase italic ${team === 'red' ? 'text-red-600' : 'text-blue-600'}`}>{player?.username}</h4>
-                                       <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase ${isHome ? (team === 'red' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white') : 'bg-neutral-600 text-white'}`}>{isHome ? 'HOME' : 'Away'}</span>
+                                       <h4 className={`font-black text-2xl uppercase italic ${team === 'red' ? 'text-red-600' : 'text-blue-600'}`}>{player?.username}</h4>
+                                       <span className={`px-3 py-0.5 rounded font-black text-[10px] uppercase ${isHome ? (team === 'red' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white') : 'bg-neutral-800 text-neutral-500'}`}>{isHome ? '主场进攻' : '客场防守'}</span>
                                     </div>
                                     
                                     <div className="space-y-2">
-                                       <label className="text-[10px] font-black uppercase opacity-50 tracking-widest">1. 基础分 Manual Base</label>
-                                       <input name={`${team}_base`} type="number" step="any" required className="w-full bg-muted p-5 rounded-2xl font-black text-4xl text-center focus:ring-8 ring-primary/10 transition-all outline-none" />
+                                       <label className="text-[10px] font-black uppercase opacity-50 tracking-[0.2em]">1. 基础分 Manual Base (扑克牌型)</label>
+                                       <input name={`${team}_base`} type="number" step="any" required placeholder="0.0" className="w-full bg-muted p-6 rounded-2xl font-black text-4xl text-center focus:ring-8 ring-primary/10 transition-all outline-none placeholder:opacity-20" />
                                     </div>
 
-                                    <div className="bg-purple-600/5 p-6 rounded-3xl border-2 border-purple-600/10 space-y-4">
+                                    <div className={`p-6 rounded-[2rem] border-2 transition-all space-y-4 ${isHome ? 'bg-purple-600/5 border-purple-600/20 shadow-lg shadow-purple-600/5' : 'bg-neutral-100/50 border-neutral-200 opacity-50'}`}>
                                        <div className="flex justify-between items-start">
-                                          <div>
-                                             <label className="text-[10px] font-black uppercase text-purple-600 tracking-widest block mb-1">2. Joker Multiplier</label>
-                                             <p className="font-black text-sm uppercase tracking-tighter">{player?.joker_name || 'NO JOKER'}</p>
-                                             <p className="text-[8px] font-bold text-muted-foreground italic leading-tight mt-1 max-w-[200px]">{player?.joker_description || 'No card assigned to this player'}</p>
+                                          <div className="flex-1">
+                                             <label className={`text-[10px] font-black uppercase tracking-[0.2em] block mb-2 ${isHome ? 'text-purple-600' : 'text-muted-foreground'}`}>2. 小丑牌倍率 Joker Multiplier</label>
+                                             <p className="font-black text-lg uppercase tracking-tighter leading-tight">{player?.joker_name || '未分配卡牌'}</p>
+                                             {player?.joker_description && <p className="text-[9px] font-bold text-muted-foreground italic leading-snug mt-1 max-w-[250px]">{player.joker_description}</p>}
                                           </div>
                                           {isHome && player?.joker_card_id && (
-                                            <label className="flex items-center gap-2 cursor-pointer bg-purple-600 text-white px-3 py-1 rounded-full shadow-lg hover:scale-105 transition-all">
-                                               <input type="checkbox" checked={useJoker} onChange={(e)=>setUseJoker(e.target.checked)} className="w-3 h-3 accent-white" />
-                                               <span className="text-[9px] font-black uppercase">应用效果?</span>
+                                            <label className="flex items-center gap-2 cursor-pointer bg-purple-600 text-white px-4 py-2 rounded-xl shadow-lg hover:scale-105 transition-all">
+                                               <input type="checkbox" checked={useJoker} onChange={(e)=>setUseJoker(e.target.checked)} className="w-4 h-4 accent-white" />
+                                               <span className="text-[10px] font-black uppercase italic">应用效果?</span>
                                             </label>
                                           )}
                                        </div>
                                        
                                        <div className="relative">
                                           {(isHome && useJoker) ? (
-                                             <>
+                                             <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                                                 <input 
                                                   name={`${team}_mult`} 
                                                   type="number" step="any" 
                                                   defaultValue={player?.joker_is_dynamic ? "" : "1.5"} 
-                                                  placeholder={player?.joker_is_dynamic ? "手动输入倍率" : "固定倍率"}
+                                                  placeholder={player?.joker_is_dynamic ? "请在此手动录入倍率" : "固定倍率已锁定"}
                                                   readOnly={!player?.joker_is_dynamic}
-                                                  className={`w-full p-5 rounded-2xl font-black text-4xl text-center outline-none transition-all ${player?.joker_is_dynamic ? 'bg-purple-100 ring-4 ring-purple-600/20' : 'bg-purple-50 opacity-80'}`} 
+                                                  className={`w-full p-6 rounded-2xl font-black text-4xl text-center outline-none transition-all ${player?.joker_is_dynamic ? 'bg-purple-100 ring-4 ring-purple-600/30' : 'bg-purple-50 text-purple-800'}`} 
                                                 />
-                                                {!player?.joker_is_dynamic && <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 font-black text-6xl">FIXED</div>}
-                                             </>
+                                                {!player?.joker_is_dynamic && <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-purple-600/30 uppercase tracking-widest italic">Fixed Value</div>}
+                                             </div>
                                           ) : (
-                                             <input value="1.0" readOnly className="w-full bg-neutral-100 p-5 rounded-2xl font-black text-4xl text-center opacity-30 cursor-not-allowed border-none outline-none" />
+                                             <div className="relative">
+                                                <input value="1.0" readOnly className="w-full bg-neutral-100 p-6 rounded-2xl font-black text-4xl text-center opacity-30 cursor-not-allowed border-none outline-none" />
+                                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none font-black text-neutral-300 italic tracking-[0.3em] uppercase text-xs">Locked Multiplier</div>
+                                             </div>
                                           )}
                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                        <div className="space-y-2">
-                                          <label className="text-[10px] font-black uppercase opacity-50 tracking-widest text-center block">3. 塔罗牌 Tarot</label>
-                                          <select name={`${team}_tarot`} className="w-full bg-muted p-4 rounded-2xl font-bold text-xs uppercase appearance-none text-center cursor-pointer hover:bg-muted/80">
-                                             <option value="">NONE</option>
+                                          <label className="text-[10px] font-black uppercase opacity-50 tracking-widest text-center block">3. 塔罗牌生效 Tarot</label>
+                                          <select name={`${team}_tarot`} className="w-full bg-muted p-4 rounded-2xl font-bold text-xs uppercase appearance-none text-center cursor-pointer hover:bg-muted/80 border-none outline-none ring-0">
+                                             <option value="">无 (None)</option>
                                              {tarots.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
                                           </select>
                                        </div>
                                        <div className="space-y-2">
-                                          <label className="text-[10px] font-black uppercase opacity-50 tracking-widest text-center block">4. 牌组 Hand</label>
-                                          <input name={`${team}_hand`} placeholder="POKER HAND" className="w-full bg-muted p-4 rounded-2xl font-black text-xs uppercase text-center outline-none" />
+                                          <label className="text-[10px] font-black uppercase opacity-50 tracking-widest text-center block">4. 牌组牌型 Hand</label>
+                                          <input name={`${team}_hand`} placeholder="例如: 葫芦 (Full House)" className="w-full bg-muted p-4 rounded-2xl font-black text-xs uppercase text-center outline-none border-none ring-0 placeholder:opacity-30" />
                                        </div>
                                     </div>
 
-                                    <div className="bg-emerald-600/5 p-4 rounded-2xl space-y-2 border border-emerald-600/10">
-                                       <p className="text-[9px] font-black uppercase text-emerald-600 tracking-widest mb-2">Team Fake Cards ({team})</p>
+                                    <div className="bg-emerald-600/5 p-5 rounded-2xl border-2 border-emerald-600/10 space-y-3">
+                                       <p className="text-[9px] font-black uppercase text-emerald-600 tracking-widest text-center italic">5. 队伍假卡加成 (可多选) Active Fake Cards</p>
                                        <div className="grid grid-cols-2 gap-2">
                                           {teamFakeCards.map(f => (
-                                            <label key={f.id} className="flex items-center gap-2 cursor-pointer hover:bg-emerald-600/10 p-2 rounded-xl transition-all border border-transparent hover:border-emerald-600/20">
-                                               <input type="checkbox" name={`${team}_fake_cards`} value={f.card_id} className={`w-3 h-3 ${team === 'red' ? 'accent-red-600' : 'accent-blue-600'}`} />
-                                               <span className="text-[9px] font-black uppercase italic tracking-tighter truncate">{f.card_name}</span>
+                                            <label key={f.id} className="flex items-center gap-3 cursor-pointer bg-white/50 p-2.5 rounded-xl transition-all border border-transparent hover:border-emerald-600/30">
+                                               <input type="checkbox" name={`${team}_fake_cards`} value={f.card_id} className={`w-4 h-4 ${team === 'red' ? 'accent-red-600' : 'accent-blue-600'}`} />
+                                               <span className="text-[10px] font-black uppercase italic tracking-tighter truncate leading-none">{f.card_name}</span>
                                             </label>
                                           ))}
                                        </div>
-                                       {teamFakeCards.length === 0 && <p className="text-[8px] font-bold opacity-20 italic text-center py-2">NO TEAM ASSETS EARNED</p>}
+                                       {teamFakeCards.length === 0 && <p className="text-[8px] font-bold opacity-20 italic text-center py-2 uppercase tracking-widest">Empty Armory</p>}
                                     </div>
                                  </div>
                               </div>
-                              <button type="submit" className={`w-full ${team === 'red' ? 'bg-red-600 shadow-red-600/30' : 'bg-blue-600 shadow-blue-600/30'} text-white font-black py-8 rounded-[2rem] text-2xl uppercase tracking-[0.2em] shadow-2xl hover:scale-[1.02] active:scale-95 transition-all italic border-b-8 border-black/20`}>
-                                 Commit Round {isRound1 ? '1' : '2'} Data
+                              <button type="submit" className={`w-full ${team === 'red' ? 'bg-red-600 shadow-red-600/30' : 'bg-blue-600 shadow-blue-600/30'} text-white font-black py-8 rounded-[2rem] text-2xl uppercase tracking-[0.2em] shadow-2xl hover:scale-[1.01] active:scale-95 transition-all italic border-b-8 border-black/20 mt-4`}>
+                                 提交该回合存档 COMMIT DATA
                               </button>
                            </form>
                         </div>
@@ -690,26 +706,38 @@ export const AdminDashboard = () => {
       
       {/* Tab: Achievements */}
       {activeTab === 'achievements' && (
-         <div className="bg-card p-10 rounded-[3rem] border shadow-xl overflow-hidden">
-           <h3 className="text-2xl font-black italic mb-8 uppercase tracking-tighter">Achievement Authority</h3>
+         <div className="bg-card p-10 rounded-[3rem] border-4 border-white/5 shadow-2xl overflow-hidden">
+           <div className="flex justify-between items-center mb-8 border-l-8 border-primary pl-6">
+              <div>
+                <h3 className="text-3xl font-black italic uppercase tracking-tighter">勋章与成就发放权限</h3>
+                <p className="text-muted-foreground font-bold text-xs uppercase tracking-widest mt-1">Manual Achievement Authorization Hub</p>
+              </div>
+              <span className="text-[10px] font-black bg-primary/20 text-primary px-4 py-1.5 rounded-full shadow-inner tracking-widest uppercase">Registry Control</span>
+           </div>
            <div className="overflow-x-auto">
              <table className="w-full text-left">
                <thead>
-                 <tr className="opacity-30 text-[10px] uppercase font-black tracking-[0.2em]">
-                   <th className="pb-6 px-4">Operator</th>
+                 <tr className="opacity-30 text-[10px] uppercase font-black tracking-[0.2em] border-b-2 border-white/5">
+                   <th className="pb-6 px-6">受控操作员 Operative</th>
                    {achievements.map(a=><th key={a.id} className="text-center pb-6">{a.name}</th>)}
                  </tr>
                </thead>
                <tbody className="divide-y divide-white/5">
                  {members.map(m=>(
                    <tr key={m.kinde_id} className="group hover:bg-muted/40 transition-all">
-                     <td className="py-5 px-4"><p className="font-black uppercase tracking-tighter">{m.username}</p><p className="text-[9px] text-muted-foreground font-bold">{m.email}</p></td>
+                     <td className="py-6 px-6">
+                        <p className="font-black uppercase tracking-tighter text-lg leading-tight">{m.username}</p>
+                        <p className="text-[10px] text-muted-foreground font-bold tracking-widest">{m.email}</p>
+                     </td>
                      {achievements.map(a=>{
                         const hasIt = userAchievements.some(ua=>ua.kinde_id===m.kinde_id && ua.achievement_id===a.id);
                         return (
                           <td key={a.id} className="text-center px-2">
-                             <button onClick={()=>handleAchievementToggle(m.kinde_id, a.id, hasIt)} className={`px-5 py-1.5 rounded-full text-[9px] font-black transition-all border-2 ${hasIt ? 'bg-primary border-primary text-primary-foreground shadow-lg' : 'bg-transparent border-muted text-muted-foreground hover:border-foreground'}`}>
-                               {hasIt ? 'AUTHORIZED' : 'UNEARNED'}
+                             <button 
+                               onClick={()=>handleAchievementToggle(m.kinde_id, a.id, hasIt)}
+                               className={`px-6 py-2 rounded-full text-[10px] font-black transition-all border-2 ${hasIt ? 'bg-primary border-primary text-primary-foreground shadow-[0_5px_15px_rgba(var(--primary),0.3)] scale-110' : 'bg-transparent border-muted text-muted-foreground hover:border-foreground hover:scale-105'}`}
+                             >
+                               {hasIt ? '已发放 GRANTED' : '未获得 N/A'}
                              </button>
                           </td>
                         )
@@ -720,6 +748,63 @@ export const AdminDashboard = () => {
              </table>
            </div>
          </div>
+      )}
+
+      {/* Tab: Match Scheduling */}
+      {activeTab === 'matches' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+           <div className="lg:col-span-1 bg-card p-8 rounded-[3rem] border-4 border-primary/10 shadow-2xl space-y-8">
+              <div className="border-l-4 border-primary pl-4">
+                 <h3 className="text-2xl font-black italic uppercase tracking-tighter leading-none">赛程对阵排期</h3>
+                 <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">Establish Match Link</p>
+              </div>
+              <form onSubmit={handleCreateMatch} className="space-y-8">
+                 <div className="space-y-2">
+                   <label className="text-[10px] font-black uppercase tracking-widest text-red-600">红队主场进攻节点 RED NODE</label>
+                   <select name="red" className="w-full bg-muted p-4 rounded-2xl font-black outline-none border-none ring-0 focus:ring-4 ring-red-600/20 text-sm">
+                     <option value="">请选择一名选手...</option>
+                     {members.filter(m=>m.is_registered===1 && m.team==='red').map(m=><option key={m.kinde_id} value={m.kinde_id}>{m.username}</option>)}
+                   </select>
+                 </div>
+                 <div className="space-y-2">
+                   <label className="text-[10px] font-black uppercase tracking-widest text-blue-600">蓝队主场防守节点 BLUE NODE</label>
+                   <select name="blue" className="w-full bg-muted p-4 rounded-2xl font-black outline-none border-none ring-0 focus:ring-4 ring-blue-600/20 text-sm">
+                     <option value="">请选择一名选手...</option>
+                     {members.filter(m=>m.is_registered===1 && m.team==='blue').map(m=><option key={m.kinde_id} value={m.kinde_id}>{m.username}</option>)}
+                   </select>
+                 </div>
+                 <button type="submit" className="w-full bg-primary text-primary-foreground font-black py-5 rounded-[1.5rem] text-xl hover:opacity-90 shadow-2xl transition-all uppercase tracking-tighter border-b-8 border-black/10 active:border-b-0 active:translate-y-2">确认并部署赛程</button>
+              </form>
+           </div>
+           <div className="lg:col-span-2 bg-card p-8 rounded-[3rem] border shadow-xl overflow-hidden relative">
+              <div className="absolute -top-10 -right-10 text-[10rem] font-black italic text-black/[0.02] uppercase pointer-events-none tracking-tighter">Pipeline</div>
+              <h3 className="text-xl font-black mb-8 italic uppercase tracking-widest opacity-40 flex items-center gap-3">
+                 <div className="w-3 h-3 bg-primary rounded-full animate-ping"></div>
+                 对阵流水线 CURRENT PIPELINE
+              </h3>
+              <div className="space-y-5">
+                 {matches.map((m,i)=>(
+                   <div key={m.id} className={`flex items-center gap-6 p-6 rounded-[2.5rem] border-2 transition-all group ${systemState.active_match_id === m.id.toString() ? 'bg-primary/5 border-primary shadow-2xl' : 'bg-muted/10 border-white/5 hover:border-primary/20'}`}>
+                      <span className="text-5xl font-black italic opacity-10 w-16 text-center tabular-nums">#{i+1}</span>
+                      <div className="flex-1 flex justify-between font-black uppercase italic tracking-tighter text-xl">
+                         <span className="text-red-600 drop-shadow-md">{m.red_player_name}</span>
+                         <span className="opacity-10 italic scale-75">VERSUS</span>
+                         <span className="text-blue-600 drop-shadow-md">{m.blue_player_name}</span>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        {systemState.active_match_id === m.id.toString() ? (
+                          <button onClick={()=>handleSetActiveMatch(null)} className="bg-destructive text-white px-8 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg hover:brightness-110">停止活动 DEACTIVATE</button>
+                        ) : (
+                          <button onClick={()=>handleSetActiveMatch(m.id.toString())} className="bg-primary text-primary-foreground px-8 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg hover:scale-105 transition-all">设为活动 ENGAGE</button>
+                        )}
+                        <button onClick={async ()=>{ if(confirm('确定Scrap该赛程？')) { await fetch('/api/admin/matches',{method:'POST',body:JSON.stringify({action:'delete',matchId:m.id})}); fetchData(true); } }} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive font-black text-[10px] transition-all text-center tracking-[0.5em] uppercase">废弃 Scrap</button>
+                      </div>
+                   </div>
+                 ))}
+                 {matches.length === 0 && <div className="text-center py-20 text-muted-foreground font-black italic opacity-20 uppercase tracking-widest text-2xl">Match Pipeline Clear</div>}
+              </div>
+           </div>
+        </div>
       )}
     </div>
   );
