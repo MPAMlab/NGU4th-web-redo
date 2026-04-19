@@ -35,7 +35,8 @@ export const onRequest: PagesFunction<{
   }
 
   if (request.method === "POST") {
-    const { action, matchId, redPlayerId, bluePlayerId, orderIndex } = await request.json() as any;
+    const body = await request.json() as any;
+    const { action, matchId, redPlayerId, bluePlayerId, orderIndex } = body;
     
     if (action === 'create') {
       await env.DB.prepare("INSERT INTO ngu4th_matches (red_player_id, blue_player_id, order_index) VALUES (?, ?, ?)")
@@ -44,8 +45,8 @@ export const onRequest: PagesFunction<{
       await env.DB.prepare("DELETE FROM ngu4th_matches WHERE id = ?")
         .bind(matchId).run();
     } else if (action === 'reorder') {
-      const { matches } = await request.json() as any; // Expect list of {id, order_index}
-      const statements = matches.map((m: any) => 
+      const { matches: matchList } = body; // Use the already parsed body
+      const statements = matchList.map((m: any) => 
         env.DB.prepare("UPDATE ngu4th_matches SET order_index = ? WHERE id = ?").bind(m.order_index, m.id)
       );
       await env.DB.batch(statements);

@@ -30,47 +30,76 @@ interface Match {
   status: string;
 }
 
+interface Card {
+  id: number;
+  name: string;
+  type: string;
+  description: string;
+}
+
+interface InventoryItem {
+  id: number;
+  card_id: number;
+  owner_type: string;
+  owner_id: string;
+  owner_name: string;
+  card_name: string;
+  card_type: string;
+  assigned_at: string;
+}
+
 export const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState<'achievements' | 'teams' | 'matches'>('achievements');
+  const [activeTab, setActiveTab] = useState<'achievements' | 'teams' | 'matches' | 'cards'>('achievements');
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
+  const [cardLibrary, setCardLibrary] = useState<Card[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
-      // Fetch everything for the admin panel
-      const [achRes, regRes, matchRes] = await Promise.all([
+      const [achRes, regRes, matchRes, cardRes] = await Promise.all([
         fetch('/api/admin/achievements'),
         fetch('/api/admin/registration'),
-        fetch('/api/admin/matches')
+        fetch('/api/admin/matches'),
+        fetch('/api/admin/cards')
       ]);
 
-      if (!achRes.ok || !regRes.ok || !matchRes.ok) throw new Error('Failed to fetch admin data');
+      if (!achRes.ok || !regRes.ok || !matchRes.ok || !cardRes.ok) throw new Error('Failed to fetch admin data');
 
-      const [achData, regData, matchData] = await Promise.all([
+      const [achData, regData, matchData, cardData] = await Promise.all([
         achRes.json(),
         regRes.json(),
-        matchRes.json()
+        matchRes.json(),
+        cardRes.json()
       ]);
 
       setAchievements(achData.achievements);
       setUserAchievements(achData.userAchievements);
       setMembers(regData);
       setMatches(matchData);
+      setCardLibrary(cardData.library);
+      setInventory(cardData.inventory);
     } catch (err: any) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  const switchTab = (tab: 'achievements' | 'teams' | 'matches' | 'cards') => {
+    setActiveTab(tab);
+    fetchData(true); 
+  };
 
   const handleAchievementToggle = async (kinde_id: string, achievement_id: string, hasAchievement: boolean) => {
     const action = hasAchievement ? 'revoke' : 'grant';
@@ -113,7 +142,6 @@ export const AdminDashboard = () => {
     const formData = new FormData(e.currentTarget);
     const redPlayerId = formData.get('red') as string;
     const bluePlayerId = formData.get('blue') as string;
-
     if (!redPlayerId || !bluePlayerId) return;
 
     try {
@@ -122,9 +150,7 @@ export const AdminDashboard = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'create', redPlayerId, bluePlayerId, orderIndex: matches.length })
       });
-      if (res.ok) {
-        fetchData();
-      }
+      if (res.ok) fetchData(true);
     } catch (e) {
       alert("Failed to create match");
     }
@@ -137,11 +163,45 @@ export const AdminDashboard = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'delete', matchId })
       });
-      if (res.ok) {
-        setMatches(matches.filter(m => m.id !== matchId));
-      }
+      if (res.ok) setMatches(matches.filter(m => m.id !== matchId));
     } catch (e) {
       alert("Failed to delete match");
+    }
+  };
+
+  const handleAssignCard = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const cardId = formData.get('cardId');
+    const target = formData.get('target') as string;
+    if (!cardId || !target) return;
+
+    let ownerType = 'user';
+    let ownerId = target;
+    if (target === 'red' || target === 'blue') ownerType = 'team';
+
+    try {
+      const res = await fetch('/api/admin/cards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'assign', cardId: parseInt(cardId as string), ownerType, ownerId })
+      });
+      if (res.ok) fetchData(true);
+    } catch (e) {
+      alert("Failed to assign card");
+    }
+  };
+
+  const handleRevokeCard = async (inventoryId: number) => {
+    try {
+      const res = await fetch('/api/admin/cards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'revoke', inventoryId })
+      });
+      if (res.ok) setInventory(inventory.filter(i => i.id !== inventoryId));
+    } catch (e) {
+      alert("Failed to revoke card");
     }
   };
 
@@ -164,16 +224,16 @@ export const AdminDashboard = () => {
         </a>
       </div>
 
-      <div className="flex gap-2 bg-muted p-1 rounded-xl w-fit">
-        {(['achievements', 'teams', 'matches'] as const).map(tab => (
+      <div className="flex gap-2 bg-muted p-1 rounded-xl w-fit overflow-x-auto">
+        {(['achievements', 'teams', 'matches', 'cards'] as const).map(tab => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-6 py-2 rounded-lg font-bold transition-all ${
+            onClick={() => switchTab(tab)}
+            className={`px-6 py-2 rounded-lg font-bold transition-all whitespace-nowrap ${
               activeTab === tab ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            {tab === 'achievements' ? '勋章成就' : tab === 'teams' ? '报名管理' : '对阵安排'}
+            {tab === 'achievements' ? '勋章成就' : tab === 'teams' ? '报名管理' : tab === 'matches' ? '对阵安排' : '卡牌仓库'}
           </button>
         ))}
       </div>
@@ -208,9 +268,7 @@ export const AdminDashboard = () => {
                         <button
                           onClick={() => handleAchievementToggle(member.kinde_id, ach.id, hasAchievement)}
                           className={`w-24 py-1.5 rounded-full text-xs font-black transition-all ${
-                            hasAchievement 
-                              ? 'bg-primary text-primary-foreground' 
-                              : 'bg-muted text-muted-foreground hover:bg-secondary hover:text-secondary-foreground'
+                            hasAchievement ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-secondary hover:text-secondary-foreground'
                           }`}
                         >
                           {hasAchievement ? '✅ 已拥有' : '❌ 未获得'}
@@ -285,37 +343,96 @@ export const AdminDashboard = () => {
                     {bluePool.map(m => <option key={m.kinde_id} value={m.kinde_id}>{m.username}</option>)}
                   </select>
                 </div>
-                <button type="submit" className="w-full bg-primary text-primary-foreground font-black py-3 rounded-xl hover:opacity-90 transition-all">
+                <button type="submit" className="w-full bg-primary text-primary-foreground font-black py-3 rounded-xl hover:opacity-90 transition-all shadow-lg">
                   添加至赛程
                 </button>
               </form>
             </div>
           </div>
-
           <div className="lg:col-span-2">
             <div className="bg-card rounded-2xl shadow-xl border overflow-hidden">
               <div className="bg-muted/50 px-6 py-4 border-b">
                 <h3 className="font-black">赛程表</h3>
               </div>
+              <div className="p-6 space-y-4">
+                {matches.length === 0 ? <div className="text-center py-20 text-muted-foreground italic">暂无赛程安排</div> : (
+                  matches.map((match, i) => (
+                    <div key={match.id} className="flex items-center gap-4 bg-muted/20 p-4 rounded-xl border group">
+                      <span className="font-black text-2xl text-muted-foreground w-8">#{i + 1}</span>
+                      <div className="flex-1 grid grid-cols-3 items-center text-center">
+                        <div className="bg-red-600 text-white p-2 rounded-lg font-bold">{match.red_player_name}</div>
+                        <div className="font-black italic text-xl">VS</div>
+                        <div className="bg-blue-600 text-white p-2 rounded-lg font-bold">{match.blue_player_name}</div>
+                      </div>
+                      <button onClick={() => handleDeleteMatch(match.id)} className="opacity-0 group-hover:opacity-100 text-destructive hover:scale-110 transition-all">
+                        <span className="text-xs font-black px-3 py-1 border border-destructive rounded-full">删除</span>
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'cards' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 space-y-6">
+            <div className="bg-card p-6 rounded-2xl shadow-xl border">
+              <h3 className="text-lg font-black mb-4">发放卡牌</h3>
+              <form onSubmit={handleAssignCard} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">选择卡牌</label>
+                  <select name="cardId" className="w-full bg-muted p-2 rounded-lg font-bold border-none ring-0 text-sm">
+                    <option value="">选择...</option>
+                    {cardLibrary.map(c => <option key={c.id} value={c.id}>[{c.type}] {c.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">发放给</label>
+                  <select name="target" className="w-full bg-muted p-2 rounded-lg font-bold border-none ring-0 text-sm">
+                    <option value="">选择目标...</option>
+                    <optgroup label="队伍">
+                      <option value="red">🔴 红队</option>
+                      <option value="blue">🔵 蓝队</option>
+                    </optgroup>
+                    <optgroup label="个人">
+                      {registeredMembers.map(m => <option key={m.kinde_id} value={m.kinde_id}>{m.username} ({m.team === 'red' ? '红' : '蓝'})</option>)}
+                    </optgroup>
+                  </select>
+                </div>
+                <button type="submit" className="w-full bg-primary text-primary-foreground font-black py-3 rounded-xl hover:opacity-90 transition-all shadow-lg">
+                  确认发放
+                </button>
+              </form>
+            </div>
+          </div>
+          <div className="lg:col-span-2">
+            <div className="bg-card rounded-2xl shadow-xl border overflow-hidden">
+              <div className="bg-muted/50 px-6 py-4 border-b flex justify-between items-center">
+                <h3 className="font-black">已持有卡牌库 (未使用)</h3>
+                <span className="text-xs font-bold text-muted-foreground">{inventory.length} 张激活中</span>
+              </div>
               <div className="p-6">
-                {matches.length === 0 ? (
-                  <div className="text-center py-20 text-muted-foreground italic">暂无赛程安排</div>
-                ) : (
-                  <div className="space-y-4">
-                    {matches.map((match, i) => (
-                      <div key={match.id} className="flex items-center gap-4 bg-muted/20 p-4 rounded-xl border group">
-                        <span className="font-black text-2xl text-muted-foreground w-8">#{i + 1}</span>
-                        <div className="flex-1 grid grid-cols-3 items-center text-center">
-                          <div className="bg-red-600 text-white p-2 rounded-lg font-bold">{match.red_player_name}</div>
-                          <div className="font-black italic text-xl">VS</div>
-                          <div className="bg-blue-600 text-white p-2 rounded-lg font-bold">{match.blue_player_name}</div>
+                {inventory.length === 0 ? <div className="text-center py-20 text-muted-foreground italic">目前没有任何人持有卡牌</div> : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {inventory.map(item => (
+                      <div key={item.id} className="bg-muted/30 p-4 rounded-xl border relative group">
+                        <div className="flex justify-between items-start mb-2">
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-tighter ${
+                            item.card_type === '小丑牌' ? 'bg-purple-100 text-purple-700' : 
+                            item.card_type === '塔罗牌' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                          }`}>
+                            {item.card_type}
+                          </span>
+                          <button onClick={() => handleRevokeCard(item.id)} className="opacity-0 group-hover:opacity-100 text-destructive text-xs font-black hover:underline">收回</button>
                         </div>
-                        <button 
-                          onClick={() => handleDeleteMatch(match.id)}
-                          className="opacity-0 group-hover:opacity-100 text-destructive hover:scale-110 transition-all"
-                        >
-                          <span className="text-xs font-black px-3 py-1 border border-destructive rounded-full">删除</span>
-                        </button>
+                        <p className="font-black text-lg leading-tight mb-1">{item.card_name}</p>
+                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-muted-foreground/10">
+                          <div className={`w-2 h-2 rounded-full ${item.owner_id === 'red' ? 'bg-red-600' : item.owner_id === 'blue' ? 'bg-blue-600' : 'bg-primary'}`}></div>
+                          <span className="text-xs font-bold">{item.owner_name}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
