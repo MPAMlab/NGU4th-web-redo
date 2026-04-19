@@ -34,17 +34,22 @@ export const onRequest: PagesFunction<{
 
   if (request.method === "POST") {
     const body = await request.json() as any;
-    const { key, value, action, name, gameId } = body;
+    const { key, value, action, name, gameId, settings } = body;
     
     if (action === 'create_game') {
       await env.DB.prepare("UPDATE ngu4th_games SET status = 'archived' WHERE status = 'active'").run();
       await env.DB.prepare("INSERT INTO ngu4th_games (name, status) VALUES (?, 'active')").bind(name).run();
-      // Also clear active_match_id in system state
       await env.DB.prepare("INSERT OR REPLACE INTO ngu4th_system_state (key, value) VALUES ('active_match_id', NULL)").run();
     } else if (action === 'archive_game') {
       await env.DB.prepare("UPDATE ngu4th_games SET status = 'archived' WHERE id = ?").bind(gameId).run();
+    } else if (action === 'update_settings') {
+      const { location, description, show_rules, show_minigames, show_stamps, show_achievements, show_cards } = settings;
+      await env.DB.prepare(`
+        UPDATE ngu4th_games 
+        SET location = ?, description = ?, show_rules = ?, show_minigames = ?, show_stamps = ?, show_achievements = ?, show_cards = ?
+        WHERE id = ?
+      `).bind(location, description, show_rules, show_minigames, show_stamps, show_achievements, show_cards, gameId).run();
     } else if (action === 'delete_game') {
-      // Logic for safe delete can be complex, for now simple:
       await env.DB.prepare("DELETE FROM ngu4th_games WHERE id = ?").bind(gameId).run();
     } else if (key) {
       await env.DB.prepare("INSERT OR REPLACE INTO ngu4th_system_state (key, value) VALUES (?, ?)")

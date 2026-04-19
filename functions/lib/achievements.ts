@@ -22,6 +22,22 @@ export async function checkAchievements(db: D1Database, kindeId: string, context
       case 'score_ge':
         if (context.type === 'score' && context.value >= parseFloat(tpl.trigger_value || '0')) shouldGrant = true;
         break;
+      case 'stamp_count':
+        if (context.type === 'stamp') {
+           const countResult: any = await db.prepare("SELECT COUNT(*) as count FROM ngu4th_stamps WHERE collector_id = ?").bind(kindeId).first();
+           if (countResult.count >= parseInt(tpl.trigger_value || '0')) shouldGrant = true;
+        }
+        break;
+      case 'staff_stamp_count':
+        if (context.type === 'stamp') {
+           const countResult: any = await db.prepare(`
+              SELECT COUNT(*) as count FROM ngu4th_stamps s 
+              JOIN ngu4th_members m ON s.scannee_id = m.kinde_id 
+              WHERE s.collector_id = ? AND m.role = 'admin'
+           `).bind(kindeId).first();
+           if (countResult.count >= parseInt(tpl.trigger_value || '0')) shouldGrant = true;
+        }
+        break;
     }
 
     if (shouldGrant) {

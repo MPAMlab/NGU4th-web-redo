@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   Users, Trophy, Swords, Zap, Settings, Info, Save, Trash2, ArrowUp, ArrowDown, 
-  RotateCcw, Plus, Edit, X, LayoutDashboard, Database, Activity, Search, Award, ChevronLeft, PlusCircle, Filter, BookOpen, Star, Eye, EyeOff, Check, Play, Archive, Calendar
+  RotateCcw, Plus, Edit, X, LayoutDashboard, Database, Activity, Search, Award, ChevronLeft, PlusCircle, Filter, BookOpen, Star, Eye, EyeOff, Check, Play, Archive, Calendar, Globe, FileText
 } from 'lucide-react';
 
 interface Achievement {
@@ -20,6 +20,13 @@ interface Game {
   name: string;
   status: string;
   created_at: string;
+  location: string;
+  description: string;
+  show_rules: number;
+  show_minigames: number;
+  show_stamps: number;
+  show_achievements: number;
+  show_cards: number;
 }
 
 interface Member {
@@ -91,7 +98,6 @@ export const AdminDashboard = () => {
   const [applyRedJoker, setApplyRedJoker] = useState(true);
   const [applyBlueJoker, setApplyBlueJoker] = useState(true);
   const [editingCard, setEditingCard] = useState<Partial<Card> | null>(null);
-  
   const [editingTplId, setEditingTplId] = useState<number | null>(null);
   const [editTplForm, setEditTplForm] = useState<Partial<Achievement>>({});
 
@@ -180,6 +186,27 @@ export const AdminDashboard = () => {
     fetchData(true);
   };
 
+  const handleUpdateGameSettings = async (e: React.FormEvent<HTMLFormElement>, gameId: number) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const settings = {
+      location: fd.get('location'),
+      description: fd.get('description'),
+      show_rules: fd.get('show_rules') === 'on' ? 1 : 0,
+      show_minigames: fd.get('show_minigames') === 'on' ? 1 : 0,
+      show_stamps: fd.get('show_stamps') === 'on' ? 1 : 0,
+      show_achievements: fd.get('show_achievements') === 'on' ? 1 : 0,
+      show_cards: fd.get('show_cards') === 'on' ? 1 : 0,
+    };
+    await fetch('/api/admin/system', { 
+       method: 'POST', 
+       headers: {'Content-Type':'application/json'}, 
+       body: JSON.stringify({ action: 'update_settings', gameId, settings }) 
+    });
+    alert("全局配置已生效");
+    fetchData(true);
+  };
+
   const handleCommitRound = async (e: React.FormEvent<HTMLFormElement>, roundType: 'red_pick' | 'blue_pick') => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -203,6 +230,7 @@ export const AdminDashboard = () => {
   if (loading) return <div className="flex items-center justify-center h-screen bg-slate-50 font-black text-indigo-600 animate-pulse tracking-widest uppercase text-xs">NGU4th COMMAND ENGINE INITIALIZING...</div>;
 
   const activeMatch = matches.find(m => m.id.toString() === systemState.active_match_id);
+  const activeGame = games.find(g => g.status === 'active');
   const redPlayer = members.find(m => m.kinde_id === activeMatch?.red_player_id);
   const bluePlayer = members.find(m => m.kinde_id === activeMatch?.blue_player_id);
   const redTeamFakeCards = inventory.filter(i => i.owner_id === 'red' && i.card_type === 'fake');
@@ -219,7 +247,7 @@ export const AdminDashboard = () => {
       <header className="flex justify-between items-center bg-slate-900 p-4 px-6 rounded-2xl text-white shadow-lg">
         <div className="flex items-center gap-3">
            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg"><LayoutDashboard size={20} /></div>
-           <div><h1 className="text-xl font-black tracking-tighter uppercase italic leading-none">NGU4th Admin</h1><p className="text-[8px] font-bold opacity-40 uppercase tracking-widest">Global Ops v9.8</p></div>
+           <div><h1 className="text-xl font-black tracking-tighter uppercase italic leading-none">NGU4th Admin</h1><p className="text-[8px] font-bold opacity-40 uppercase tracking-widest">Global Ops v9.9</p></div>
         </div>
         <div className="flex gap-2">
           <a href="/live" target="_blank" className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-black text-[9px] uppercase transition-all flex items-center gap-2 italic tracking-wider border border-white/5"><Activity size={12} /> Live View</a>
@@ -230,32 +258,64 @@ export const AdminDashboard = () => {
       <nav className="flex gap-1 bg-slate-200/50 p-1 rounded-xl w-fit border border-slate-200">
         {(['members', 'achievements', 'templates', 'matches', 'live', 'library', 'games'] as const).map(tab => (
           <button key={tab} onClick={() => switchTab(tab)} className={`px-4 py-1.5 rounded-lg font-black transition-all whitespace-nowrap uppercase tracking-tighter text-[9px] ${activeTab === tab ? 'bg-white shadow-sm text-indigo-600 border border-indigo-100' : 'text-slate-500 hover:text-slate-800'}`}>
-            {tab === 'members' ? '选手' : tab === 'achievements' ? '发放' : tab === 'templates' ? '成就库' : tab === 'matches' ? '赛程' : tab === 'live' ? '计分' : tab === 'library' ? '牌库' : '游戏管理'}
+            {tab === 'members' ? '选手' : tab === 'achievements' ? '发放' : tab === 'templates' ? '成就库' : tab === 'matches' ? '赛程' : tab === 'live' ? '计分' : tab === 'library' ? '牌库' : '全局管理'}
           </button>
         ))}
       </nav>
 
-      {/* Tab: Games Management */}
+      {/* Tab: Games & Global Settings */}
       {activeTab === 'games' && (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 animate-in fade-in duration-300">
-           <div className="lg:col-span-1 space-y-4">
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                 <h3 className="font-black italic uppercase text-[10px] tracking-widest text-slate-400 flex items-center gap-2"><PlusCircle size={12}/> 开启新一轮游戏</h3>
-                 <form onSubmit={async (e)=>{e.preventDefault(); const name = new FormData(e.currentTarget).get('name'); await fetch('/api/admin/system', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action: 'create_game', name }) }); fetchData(true); (e.target as any).reset();}} className="space-y-3">
-                    <input name="name" required placeholder="游戏/轮次名称 (e.g. Day 2)" className={inputClass} />
-                    <button type="submit" className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-black uppercase text-[9px] shadow-lg">归档当前并创建</button>
-                    <p className="text-[7px] text-slate-400 italic">开启后，所有当前未完成的对阵将被归档，系统状态将重置。</p>
+        <div className="space-y-4 animate-in fade-in duration-300">
+           {activeGame && (
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xl space-y-6">
+                 <div className="flex items-center gap-3 border-b pb-4 border-slate-100">
+                    <Settings className="text-indigo-600" size={20} />
+                    <h3 className="font-black italic uppercase text-xs tracking-widest">Active Game Global Settings - {activeGame.name}</h3>
+                 </div>
+                 <form onSubmit={(e)=>handleUpdateGameSettings(e, activeGame.id)} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                       <div className="space-y-1"><label className="text-[8px] font-black uppercase text-slate-400">现场地点 (Location)</label><input name="location" defaultValue={activeGame.location} className={inputClass} /></div>
+                       <div className="space-y-1"><label className="text-[8px] font-black uppercase text-slate-400">活动简介 (Description)</label><textarea name="description" defaultValue={activeGame.description} className={inputClass + " h-32 resize-none"} /></div>
+                    </div>
+                    <div className="space-y-4">
+                       <label className="text-[8px] font-black uppercase text-slate-400">模块可见性 (Visibility)</label>
+                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {[
+                             { id: 'show_rules', label: '显示计分规则', icon: <Swords size={14}/> },
+                             { id: 'show_minigames', label: '显示小游戏入口', icon: <Zap size={14}/> },
+                             { id: 'show_stamps', label: '显示集邮系统', icon: <QrCode size={14}/> },
+                             { id: 'show_achievements', label: '显示成就系统', icon: <Award size={14}/> },
+                             { id: 'show_cards', label: '显示牌库链接', icon: <BookOpen size={14}/> }
+                          ].map(item => (
+                             <label key={item.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer hover:bg-slate-100">
+                                <div className="flex items-center gap-2"><span className="text-slate-400">{item.icon}</span><span className="text-[10px] font-black uppercase">{item.label}</span></div>
+                                <input type="checkbox" name={item.id} defaultChecked={(activeGame as any)[item.id] === 1} className="w-4 h-4 accent-indigo-600" />
+                             </label>
+                          ))}
+                       </div>
+                       <button type="submit" className="w-full bg-slate-900 text-white py-3 rounded-xl font-black uppercase text-[10px] shadow-xl hover:bg-black mt-2">更新并应用全局配置 APPLY CONFIG</button>
+                    </div>
                  </form>
               </div>
-           </div>
-           <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="bg-slate-50 p-3 border-b font-black text-[9px] uppercase tracking-widest text-slate-400">Archive Records</div>
-              <table className="w-full text-left text-xs"><thead className="bg-slate-50 font-black border-b"><tr><th className="p-3">轮次名称</th><th className="p-3">状态</th><th className="p-3">创建时间</th><th className="p-3 text-right">Ops</th></tr></thead><tbody className="divide-y divide-slate-100">{games.map(g => (<tr key={g.id} className="hover:bg-slate-50"><td className="p-3 font-black uppercase">{g.name}</td><td className="p-3"><Badge variant={g.status === 'active' ? 'default' : 'secondary'}>{g.status}</Badge></td><td className="p-3 text-slate-400 font-mono text-[9px]">{new Date(g.created_at).toLocaleString()}</td><td className="p-3 text-right"><button onClick={async ()=>{if(confirm('Archive?')) {await fetch('/api/admin/system', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action: 'archive_game', gameId: g.id }) }); fetchData(true);}}} className="p-1 text-slate-400 hover:text-indigo-600"><Archive size={14}/></button></td></tr>))}</tbody></table>
+           )}
+
+           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+              <div className="lg:col-span-1 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                 <h3 className="font-black italic uppercase text-[10px] tracking-widest text-slate-400 flex items-center gap-2"><PlusCircle size={12}/> 开启新一轮游戏</h3>
+                 <form onSubmit={async (e)=>{e.preventDefault(); const name = new FormData(e.currentTarget).get('name'); await fetch('/api/admin/system', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action: 'create_game', name }) }); fetchData(true); (e.target as any).reset();}} className="space-y-3">
+                    <input name="name" required placeholder="游戏名称 (e.g. Phase 2)" className={inputClass} />
+                    <button type="submit" className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-black uppercase text-[9px] shadow-lg italic">ARCHIVE & CREATE</button>
+                 </form>
+              </div>
+              <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                 <div className="bg-slate-50 p-3 border-b font-black text-[9px] uppercase tracking-widest text-slate-400">Game Archive Records</div>
+                 <table className="w-full text-left text-xs"><thead className="bg-slate-50 font-black border-b text-slate-400"><tr><th className="p-3">轮次名称</th><th className="p-3 text-center">状态</th><th className="p-3">创建时间</th><th className="p-3 text-right">Ops</th></tr></thead><tbody className="divide-y divide-slate-100">{games.map(g => (<tr key={g.id} className="hover:bg-slate-50"><td className="p-3 font-black uppercase text-indigo-600">{g.name}</td><td className="p-3 text-center"><Badge variant={g.status === 'active' ? 'default' : 'secondary'}>{g.status}</Badge></td><td className="p-3 text-slate-400 font-mono text-[9px]">{new Date(g.created_at).toLocaleString()}</td><td className="p-3 text-right"><button onClick={async ()=>{if(confirm('Archive?')) {await fetch('/api/admin/system', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action: 'archive_game', gameId: g.id }) }); fetchData(true);}}} className="p-1 text-slate-400 hover:text-indigo-600"><Archive size={14}/></button></td></tr>))}</tbody></table>
+              </div>
            </div>
         </div>
       )}
 
-      {/* Tab: Members */}
+      {/* Tab: Members (Stay list) */}
       {activeTab === 'members' && (
         <div className="space-y-4 animate-in fade-in duration-300">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -292,68 +352,8 @@ export const AdminDashboard = () => {
                <div className="flex flex-col"><h3 className="font-black italic uppercase text-[10px] tracking-widest text-slate-400">Template Engine</h3><p className="text-[11px] font-bold text-slate-800">成就模板库与触发逻辑定义</p></div>
                <button onClick={()=>handleAchievementAction('create_template', { name: '新成就', condition: '达成条件', scene: '场景', notes: '', trigger_type: null, trigger_value: null, is_hidden: 0 })} className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-black uppercase text-[10px] italic shadow-lg hover:scale-105 transition-all flex items-center gap-2"><Plus size={14}/> 新建成就在线定义</button>
             </div>
-
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-               <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 font-black border-b sticky top-0 z-10 text-slate-400 uppercase tracking-widest">
-                     <tr><th className="p-4">名称 / 条件</th><th className="p-4">隐藏</th><th className="p-4">自动触发逻辑 (HOOKS)</th><th className="p-4 text-right">Ops</th></tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                     {achievements.map(tpl => {
-                        const isEditing = editingTplId === tpl.id;
-                        return (
-                          <tr key={tpl.id} className={isEditing ? "bg-indigo-50/50 transition-colors" : "hover:bg-slate-50"}>
-                             <td className="p-4">
-                                {isEditing ? (
-                                   <div className="space-y-2 w-[240px]">
-                                      <input value={editTplForm.name} onChange={e=>setEditTplForm({...editTplForm, name: e.target.value})} className={inputClass} placeholder="名称" />
-                                      <input value={editTplForm.condition || ''} onChange={e=>setEditTplForm({...editTplForm, condition: e.target.value})} className={inputClass + " text-[10px]"} placeholder="条件描述" />
-                                   </div>
-                                ) : (
-                                   <div className="flex flex-col"><span className="font-black text-[11px] uppercase text-indigo-600">{tpl.name}</span><span className="opacity-40 italic font-bold text-[9px] truncate max-w-[240px]">{tpl.condition}</span></div>
-                                )}
-                             </td>
-                             <td className="p-4">
-                                {isEditing ? (
-                                   <input type="checkbox" checked={editTplForm.is_hidden === 1} onChange={e=>setEditTplForm({...editTplForm, is_hidden: e.target.checked?1:0})} className="w-4 h-4 accent-indigo-600" />
-                                ) : (
-                                   tpl.is_hidden === 1 ? <EyeOff size={14} className="text-amber-500" /> : <Eye size={14} className="opacity-20" />
-                                )}
-                             </td>
-                             <td className="p-4">
-                                {isEditing ? (
-                                   <div className="flex gap-2 w-[240px]">
-                                      <select value={editTplForm.trigger_type || "manual"} onChange={e=>setEditTplForm({...editTplForm, trigger_type: e.target.value === 'manual' ? null : e.target.value})} className={selectClass + " w-1/2"}>
-                                         <option value="manual">手动授权</option>
-                                         <option value="registration">完成报名</option>
-                                         <option value="team_join">加入队伍</option>
-                                         <option value="role_eq">身份等于</option>
-                                         <option value="score_ge">单局分数 {'>'}= n</option>
-                                      </select>
-                                      <input value={editTplForm.trigger_value || ''} onChange={e=>setEditTplForm({...editTplForm, trigger_value: e.target.value})} className={inputClass + " w-1/2"} placeholder="触发值" />
-                                   </div>
-                                ) : (
-                                   tpl.trigger_type ? <Badge variant="outline">{tpl.trigger_type}: {tpl.trigger_value}</Badge> : <span className="opacity-20 font-black italic tracking-widest text-[9px]">MANUAL</span>
-                                )}
-                             </td>
-                             <td className="p-4 text-right">
-                                {isEditing ? (
-                                   <div className="flex justify-end gap-1">
-                                      <button onClick={()=>handleAchievementAction('update_template', { ...editTplForm, achievementId: tpl.id })} className="p-2 bg-indigo-600 text-white rounded-lg shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all"><Check size={14}/></button>
-                                      <button onClick={()=>setEditingTplId(null)} className="p-2 bg-slate-200 text-slate-600 rounded-lg"><X size={14}/></button>
-                                   </div>
-                                ) : (
-                                   <div className="flex justify-end gap-1">
-                                      <button onClick={()=>{ setEditingTplId(tpl.id); setEditTplForm(tpl); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"><Edit size={14}/></button>
-                                      <button onClick={()=>{if(confirm('Delete?')) handleAchievementAction('delete_template', { achievementId: tpl.id })}} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={14}/></button>
-                                   </div>
-                                )}
-                             </td>
-                          </tr>
-                        );
-                     })}
-                  </tbody>
-               </table>
+               <table className="w-full text-left text-xs"><thead className="bg-slate-50 font-black border-b sticky top-0 z-10 text-slate-400 uppercase tracking-widest"><tr><th className="p-4">名称 / 条件</th><th className="p-4">隐藏</th><th className="p-4">自动触发逻辑 (HOOKS)</th><th className="p-4 text-right">Ops</th></tr></thead><tbody className="divide-y divide-slate-100">{achievements.map(tpl => {const isEditing = editingTplId === tpl.id; return (<tr key={tpl.id} className={isEditing ? "bg-indigo-50/50 transition-colors" : "hover:bg-slate-50"}><td className="p-4">{isEditing ? (<div className="space-y-2 w-[240px]"><input value={editTplForm.name} onChange={e=>setEditTplForm({...editTplForm, name: e.target.value})} className={inputClass} placeholder="名称" /><input value={editTplForm.condition || ''} onChange={e=>setEditTplForm({...editTplForm, condition: e.target.value})} className={inputClass + " text-[10px]"} placeholder="条件描述" /></div>) : (<div className="flex flex-col"><span className="font-black text-[11px] uppercase text-indigo-600">{tpl.name}</span><span className="opacity-40 italic font-bold text-[9px] truncate max-w-[240px]">{tpl.condition}</span></div>)}</td><td className="p-4">{isEditing ? (<input type="checkbox" checked={editTplForm.is_hidden === 1} onChange={e=>setEditTplForm({...editTplForm, is_hidden: e.target.checked?1:0})} className="w-4 h-4 accent-indigo-600" />) : (tpl.is_hidden === 1 ? <EyeOff size={14} className="text-amber-500" /> : <Eye size={14} className="opacity-20" />)}</td><td className="p-4">{isEditing ? (<div className="flex gap-2 w-[240px]"><select value={editTplForm.trigger_type || "manual"} onChange={e=>setEditTplForm({...editTplForm, trigger_type: e.target.value === 'manual' ? null : e.target.value})} className={selectClass + " w-1/2"}><option value="manual">手动授权</option><option value="registration">完成报名</option><option value="team_join">加入队伍</option><option value="role_eq">身份等于</option><option value="score_ge">单局分数 {'>'}= n</option></select><input value={editTplForm.trigger_value || ''} onChange={e=>setEditTplForm({...editTplForm, trigger_value: e.target.value})} className={inputClass + " w-1/2"} placeholder="触发值" /></div>) : (tpl.trigger_type ? <Badge variant="outline">{tpl.trigger_type}: {tpl.trigger_value}</Badge> : <span className="opacity-20 font-black italic tracking-widest text-[9px]">MANUAL</span>)}</td><td className="p-4 text-right">{isEditing ? (<div className="flex justify-end gap-1"><button onClick={()=>handleAchievementAction('update_template', { ...editTplForm, achievementId: tpl.id })} className="p-2 bg-indigo-600 text-white rounded-lg shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all"><Check size={14}/></button><button onClick={()=>setEditingTplId(null)} className="p-2 bg-slate-200 text-slate-600 rounded-lg"><X size={14}/></button></div>) : (<div className="flex justify-end gap-1"><button onClick={()=>{ setEditingTplId(tpl.id); setEditTplForm(tpl); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"><Edit size={14}/></button><button onClick={()=>{if(confirm('Delete?')) handleAchievementAction('delete_template', { achievementId: tpl.id })}} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={14}/></button></div>)}</td></tr>);})}</tbody></table>
             </div>
          </div>
       )}
@@ -397,7 +397,7 @@ export const AdminDashboard = () => {
       {activeTab === 'matches' && (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 animate-in fade-in duration-300">
            <div className="lg:col-span-1 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-6"><h3 className="font-black italic uppercase text-[10px] tracking-widest text-slate-400">Deploy Link</h3><form onSubmit={handleCreateMatch} className="space-y-3"><select name="red" className={selectClass}><option value="">Red Player...</option>{members.filter(m=>m.is_registered===1 && m.team==='red').map(m=><option key={m.kinde_id} value={m.kinde_id}>{m.username}</option>)}</select><select name="blue" className={selectClass}><option value="">Blue Player...</option>{members.filter(m=>m.is_registered===1 && m.team==='blue').map(m=><option key={m.kinde_id} value={m.kinde_id}>{m.username}</option>)}</select><button type="submit" className="w-full bg-indigo-600 text-white font-black py-2.5 rounded-xl shadow-lg uppercase text-[9px] border-b-4 border-indigo-800 active:border-b-0 active:translate-y-1 transition-all">Establish Match</button></form></div>
-           <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"><div className="bg-slate-50 p-3 px-4 border-b font-black text-[9px] uppercase tracking-widest text-slate-400">Active Pipeline</div><div className="p-3 space-y-2">{matches.map((m,i)=>{ const isActive=systemState.active_match_id === m.id.toString(); return(<div key={m.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${isActive ? 'bg-indigo-600 border-indigo-500 shadow-lg text-white' : 'bg-slate-50 border-slate-100 hover:border-indigo-100'}`}><span className={`text-2xl font-black italic tabular-nums w-10 ${isActive ? 'text-white/20' : 'text-slate-200'}`}>#{i+1}</span><div className="flex-1 flex justify-between font-black uppercase text-xs italic tracking-tighter"><span className={isActive ? 'text-white' : 'text-red-600'}>{m.red_player_name}</span><span className="opacity-10 scale-50">VS</span><span className={isActive ? 'text-white' : 'text-blue-600'}>{m.blue_player_name}</span></div><div className="flex flex-col gap-1">{isActive ? <button onClick={()=>handleSetActiveMatch(null)} className="bg-white text-indigo-600 px-3 py-1 rounded font-black text-[8px] uppercase">Stop</button> : <button onClick={()=>handleSetActiveMatch(m.id.toString())} className="bg-blue-600 text-white px-3 py-1 rounded font-black text-[8px] uppercase">Engage</button>}<button onClick={async ()=>{ if(confirm('Scrap?')) { await fetch('/api/admin/matches',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',matchId:m.id})}); fetchData(true); } }} className={`text-[7px] font-black uppercase text-center ${isActive ? 'text-white/40' : 'text-slate-300'}`}>Scrap</button></div></div>); })}</div></div>
+           <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"><div className="p-3 space-y-2">{matches.map((m,i)=>{ const isActive=systemState.active_match_id === m.id.toString(); return(<div key={m.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${isActive ? 'bg-indigo-600 border-indigo-500 shadow-lg text-white' : 'bg-slate-50 border-slate-100 hover:border-indigo-100'}`}><span className={`text-2xl font-black italic tabular-nums w-10 ${isActive ? 'text-white/20' : 'text-slate-200'}`}>#{i+1}</span><div className="flex-1 flex justify-between font-black uppercase text-xs italic tracking-tighter"><span className={isActive ? 'text-white' : 'text-red-600'}>{m.red_player_name}</span><span className="opacity-10 scale-50">VS</span><span className={isActive ? 'text-white' : 'text-blue-600'}>{m.blue_player_name}</span></div><div className="flex flex-col gap-1">{isActive ? <button onClick={()=>handleSetActiveMatch(null)} className="bg-white text-indigo-600 px-3 py-1 rounded font-black text-[8px] uppercase">Stop</button> : <button onClick={()=>handleSetActiveMatch(m.id.toString())} className="bg-blue-600 text-white px-3 py-1 rounded font-black text-[8px] uppercase">Engage</button>}<button onClick={async ()=>{ if(confirm('Scrap?')) { await fetch('/api/admin/matches',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',matchId:m.id})}); fetchData(true); } }} className={`text-[7px] font-black uppercase text-center ${isActive ? 'text-white/40' : 'text-slate-300'}`}>Scrap</button></div></div>); })}</div></div>
         </div>
       )}
 
