@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { RegistrationPage } from './pages/Registration'
 import { DashboardPage } from './pages/Dashboard'
 import { AdminDashboard } from './pages/AdminDashboard'
+import { LiveView } from './pages/LiveView'
 
 function App() {
   const [auth, setAuth] = useState<{ user: any, achievements: any[] } | null>(null)
@@ -52,6 +53,7 @@ function App() {
               <AdminDashboard />
             ) : <Navigate to="/dashboard" />
           } />
+          <Route path="/live" element={<LiveView />} />
         </Routes>
       </div>
     </Router>
