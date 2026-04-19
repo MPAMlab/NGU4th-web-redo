@@ -20,6 +20,9 @@ export const DashboardPage = ({ user, achievements }: { user: User, achievements
         <div>
           <h1 className="text-3xl font-bold">欢迎, {user.username}!</h1>
           <p className="text-muted-foreground">{user.email} | {user.role === 'admin' ? "管理员" : "参赛选手"}</p>
+          {user.role === 'admin' && (
+            <a href="/admin" className="text-sm text-primary hover:underline block mt-2 font-bold">进入后台管理系统 →</a>
+          )}
         </div>
         <a href="/api/auth/logout" className="text-destructive hover:underline">退出登录</a>
       </header>

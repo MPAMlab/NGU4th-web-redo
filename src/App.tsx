@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { RegistrationPage } from './pages/Registration'
 import { DashboardPage } from './pages/Dashboard'
+import { AdminDashboard } from './pages/AdminDashboard'
 
 function App() {
   const [auth, setAuth] = useState<{ user: any, achievements: any[] } | null>(null)
@@ -45,6 +46,11 @@ function App() {
                 </div>
               </div>
             ) : <Navigate to="/" />
+          } />
+          <Route path="/admin" element={
+            auth && auth.user.role === 'admin' ? (
+              <AdminDashboard />
+            ) : <Navigate to="/dashboard" />
           } />
         </Routes>
       </div>

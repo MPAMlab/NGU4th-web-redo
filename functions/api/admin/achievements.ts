@@ -20,10 +20,16 @@ export const onRequest: PagesFunction<{
   if (user?.role !== 'admin') return new Response("Forbidden", { status: 403 });
 
   if (request.method === "GET") {
-    // List all achievements or users (for assignment)
+    // List all achievements, users, and mappings
     const achievements = await env.DB.prepare("SELECT * FROM ngu4th_achievements").all();
     const members = await env.DB.prepare("SELECT kinde_id, username, email FROM ngu4th_members").all();
-    return new Response(JSON.stringify({ achievements: achievements.results, members: members.results }), {
+    const userAchievements = await env.DB.prepare("SELECT kinde_id, achievement_id FROM ngu4th_user_achievements").all();
+    
+    return new Response(JSON.stringify({ 
+      achievements: achievements.results, 
+      members: members.results,
+      userAchievements: userAchievements.results
+    }), {
       headers: { "Content-Type": "application/json" }
     });
   }

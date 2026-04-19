@@ -15,22 +15,27 @@ export const onRequest: PagesFunction<{
   }
 
   if (request.method === "GET") {
-    const user = await env.DB.prepare("SELECT is_registered, last_registered_at FROM ngu4th_members WHERE kinde_id = ?")
+    const user = await env.DB.prepare("SELECT is_registered, last_registered_at, team FROM ngu4th_members WHERE kinde_id = ?")
       .bind(kindeId).first();
-    return new Response(JSON.stringify(user), { headers: { "Content-Type": "application/json" } });
+    
+    const roster = await env.DB.prepare("SELECT username, team FROM ngu4th_members WHERE is_registered = 1").all();
+    
+    return new Response(JSON.stringify({ 
+      currentUser: user, 
+      publicRoster: roster.results 
+    }), { headers: { "Content-Type": "application/json" } });
   }
 
   if (request.method === "POST") {
-    const { action } = await request.json() as { action: 'register' | 'cancel' };
+    const { action, team } = await request.json() as { action: 'register' | 'cancel', team?: string };
     
-    const user: any = await env.DB.prepare("SELECT last_registered_at FROM ngu4th_members WHERE kinde_id = ?")
-      .bind(kindeId).first();
-
     const isRegistered = action === 'register' ? 1 : 0;
-    await env.DB.prepare("UPDATE ngu4th_members SET is_registered = ?, last_registered_at = ? WHERE kinde_id = ?")
-      .bind(isRegistered, new Date().toISOString(), kindeId).run();
+    const finalTeam = action === 'register' ? (team || null) : null;
 
-    return new Response(JSON.stringify({ success: true, is_registered: isRegistered }), {
+    await env.DB.prepare("UPDATE ngu4th_members SET is_registered = ?, last_registered_at = ?, team = ? WHERE kinde_id = ?")
+      .bind(isRegistered, new Date().toISOString(), finalTeam, kindeId).run();
+
+    return new Response(JSON.stringify({ success: true, is_registered: isRegistered, team: finalTeam }), {
       headers: { "Content-Type": "application/json" }
     });
   }
