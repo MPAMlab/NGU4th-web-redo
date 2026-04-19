@@ -26,21 +26,9 @@ export const onRequest: PagesFunction<{
     const user: any = await env.DB.prepare("SELECT last_registered_at FROM ngu4th_members WHERE kinde_id = ?")
       .bind(kindeId).first();
 
-    const now = new Date();
-    if (user.last_registered_at) {
-      const lastAction = new Date(user.last_registered_at);
-      const diffHours = (now.getTime() - lastAction.getTime()) / (1000 * 60 * 60);
-      if (diffHours < 24) {
-        return new Response(JSON.stringify({ error: "24h cooldown in effect" }), { 
-          status: 429, 
-          headers: { "Content-Type": "application/json" } 
-        });
-      }
-    }
-
     const isRegistered = action === 'register' ? 1 : 0;
     await env.DB.prepare("UPDATE ngu4th_members SET is_registered = ?, last_registered_at = ? WHERE kinde_id = ?")
-      .bind(isRegistered, now.toISOString(), kindeId).run();
+      .bind(isRegistered, new Date().toISOString(), kindeId).run();
 
     return new Response(JSON.stringify({ success: true, is_registered: isRegistered }), {
       headers: { "Content-Type": "application/json" }

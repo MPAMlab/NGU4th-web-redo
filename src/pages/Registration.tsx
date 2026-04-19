@@ -81,7 +81,6 @@ export const RegistrationPage = () => {
             </button>
           )}
         </div>
-        <p className="text-xs text-muted-foreground mt-2 italic">注意：24小时内只能报名或取消一次。</p>
       </div>
     </div>
   );
