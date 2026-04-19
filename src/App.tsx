@@ -18,7 +18,12 @@ function App() {
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="flex items-center justify-center h-screen">Loading...</div>
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-screen bg-background gap-4">
+      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <p className="font-black text-xl tracking-widest animate-pulse">载入中...</p>
+    </div>
+  )
 
   return (
     <Router>
@@ -26,15 +31,20 @@ function App() {
         <Routes>
           <Route path="/" element={
             auth ? <Navigate to="/dashboard" /> : (
-              <div className="text-center space-y-6">
-                <h1 className="text-6xl font-black tracking-tighter">NGU4th</h1>
-                <p className="text-xl text-muted-foreground">Never Give Up 4th 比赛管理系统</p>
-                <a 
-                  href="/api/auth/login" 
-                  className="inline-block bg-primary text-primary-foreground px-8 py-3 rounded-full font-bold text-lg hover:opacity-90 transition-opacity"
-                >
-                  进入系统
-                </a>
+              <div className="text-center space-y-8 py-20">
+                <div className="space-y-2">
+                  <h1 className="text-8xl font-black tracking-tighter italic">NGU4th</h1>
+                  <p className="text-2xl text-muted-foreground font-bold uppercase tracking-[0.3em]">Never Give Up</p>
+                </div>
+                <div className="max-w-md mx-auto bg-card p-8 rounded-3xl border shadow-xl space-y-6">
+                  <p className="text-lg font-medium">欢迎来到第四届 NGU 比赛管理系统</p>
+                  <a 
+                    href="/api/auth/login" 
+                    className="block w-full bg-primary text-primary-foreground py-4 rounded-2xl font-black text-xl hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20"
+                  >
+                    进入系统 LOGIN
+                  </a>
+                </div>
               </div>
             )
           } />

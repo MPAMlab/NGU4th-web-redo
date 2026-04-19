@@ -29,7 +29,7 @@ export const RegistrationPage = () => {
         setData(json);
       }
     } catch (e) {
-      setError("Failed to fetch status");
+      setError("获取报名状态失败");
     } finally {
       setLoading(false);
     }
@@ -48,20 +48,20 @@ export const RegistrationPage = () => {
         body: JSON.stringify({ action, team })
       });
       if (res.ok) {
-        await fetchData(); // Refresh everything
+        await fetchData(); // 刷新所有数据
         setError(null);
       } else {
         const err = await res.json();
-        setError(err.error || "Action failed");
+        setError(err.error || "操作失败");
       }
     } catch (e) {
-      setError("Request failed");
+      setError("请求发送失败");
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading && !data.currentUser) return <div className="text-center p-10">Loading registration details...</div>;
+  if (loading && !data.currentUser) return <div className="text-center p-10 font-bold">载入报名详情中...</div>;
 
   const redTeam = data.publicRoster.filter(p => p.team === 'red');
   const blueTeam = data.publicRoster.filter(p => p.team === 'blue');
