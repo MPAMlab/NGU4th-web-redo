@@ -15,6 +15,9 @@ interface Member {
   team: string | null;
   team_order: number;
   joker_card_id: number | null;
+  joker_name?: string;
+  joker_description?: string;
+  joker_is_dynamic?: number;
 }
 
 interface Match {
@@ -33,6 +36,7 @@ interface Card {
   name: string;
   type: string;
   description: string;
+  is_dynamic: number;
 }
 
 interface InventoryItem {
@@ -73,6 +77,10 @@ export const AdminDashboard = () => {
   const [minigames, setMinigames] = useState<Minigame[]>([]);
   const [participants, setParticipants] = useState<any[]>([]);
   
+  // Local state for live form toggles
+  const [applyRedJoker, setApplyRedJoker] = useState(true);
+  const [applyBlueJoker, setApplyBlueJoker] = useState(true);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -101,7 +109,19 @@ export const AdminDashboard = () => {
 
       setAchievements(achData.achievements);
       setUserAchievements(achData.userAchievements);
-      setMembers((regData as Member[]).sort((a, b) => a.team_order - b.team_order));
+      
+      // Enrich members with Joker data
+      const enrichedMembers = (regData as Member[]).map(m => {
+         const joker = (cardData.library as Card[]).find(c => c.id === m.joker_card_id);
+         return {
+            ...m,
+            joker_name: joker?.name,
+            joker_description: joker?.description,
+            joker_is_dynamic: joker?.is_dynamic
+         };
+      });
+      setMembers(enrichedMembers.sort((a, b) => a.team_order - b.team_order));
+      
       setMatches(matchData);
       setCardLibrary(cardData.library);
       setInventory(cardData.inventory);
@@ -239,7 +259,7 @@ export const AdminDashboard = () => {
       roundType,
       redData: {
         baseScore: formData.get('red_base'),
-        multiplier: formData.get('red_mult'),
+        multiplier: applyRedJoker ? formData.get('red_mult') : 1.0,
         exponent: 1.0,
         tarotId: formData.get('red_tarot'),
         hand: formData.get('red_hand'),
@@ -247,7 +267,7 @@ export const AdminDashboard = () => {
       },
       blueData: {
         baseScore: formData.get('blue_base'),
-        multiplier: formData.get('blue_mult'),
+        multiplier: applyBlueJoker ? formData.get('blue_mult') : 1.0,
         exponent: 1.0,
         tarotId: formData.get('blue_tarot'),
         hand: formData.get('blue_hand'),
@@ -305,12 +325,13 @@ export const AdminDashboard = () => {
 
   if (loading) return <div className="text-center p-20 font-black animate-pulse text-2xl tracking-widest uppercase">Initializing Core...</div>;
 
-  const redPool = members.filter(m => m.is_registered === 1 && m.team === 'red');
-  const bluePool = members.filter(m => m.is_registered === 1 && m.team === 'blue');
   const activeMatch = matches.find(m => m.id.toString() === systemState.active_match_id);
   const jokers = cardLibrary.filter(c => c.type === '小丑牌');
   const tarots = cardLibrary.filter(c => c.type === '塔罗牌');
   const fakeCards = cardLibrary.filter(c => c.type === '假卡');
+
+  const redPlayer = members.find(m => m.kinde_id === activeMatch?.red_player_id);
+  const bluePlayer = members.find(m => m.kinde_id === activeMatch?.blue_player_id);
 
   const redTeamFakeCards = inventory.filter(i => i.owner_id === 'red' && i.card_type === '假卡');
   const blueTeamFakeCards = inventory.filter(i => i.owner_id === 'blue' && i.card_type === '假卡');
@@ -321,7 +342,7 @@ export const AdminDashboard = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-4 border-primary pb-6">
         <div>
           <h1 className="text-6xl font-black tracking-tighter italic text-primary leading-none uppercase">NGU4th ADMIN</h1>
-          <p className="text-muted-foreground font-black uppercase tracking-[0.2em] text-[10px] mt-1">Global Match Control Unit v6.2</p>
+          <p className="text-muted-foreground font-black uppercase tracking-[0.2em] text-[10px] mt-1">Global Match Control Unit v6.3</p>
         </div>
         <div className="flex gap-4">
           <a href="/live" target="_blank" className="bg-green-600 text-white px-6 py-2 rounded-xl font-black hover:bg-green-700 transition-all shadow-lg text-sm">
@@ -389,8 +410,8 @@ export const AdminDashboard = () => {
                           <p className="text-[9px] text-muted-foreground mt-1 font-bold">{m.email}</p>
                         </div>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                          <button onClick={() => handleReorder(m.kinde_id, 'up')} className="bg-background p-2 rounded-lg border shadow-sm hover:bg-primary hover:text-white">▲</button>
-                          <button onClick={() => handleReorder(m.kinde_id, 'down')} className="bg-background p-2 rounded-lg border shadow-sm hover:bg-primary hover:text-white">▼</button>
+                          <button onClick={() => handleReorder(m.kinde_id, 'up')} className="bg-background p-2 rounded-lg border shadow-sm hover:bg-primary hover:text-white" title="上移">▲</button>
+                          <button onClick={() => handleReorder(m.kinde_id, 'down')} className="bg-background p-2 rounded-lg border shadow-sm hover:bg-primary hover:text-white" title="下移">▼</button>
                           <button onClick={() => handleMemberAction(m.kinde_id, 'set_team', team === 'red' ? 'blue' : 'red')} className="bg-background p-2 rounded-lg border shadow-sm text-[10px] font-black uppercase">Switch</button>
                           <button onClick={() => handleMemberAction(m.kinde_id, 'remove_registration', null)} className="bg-background p-2 rounded-lg border shadow-sm text-[10px] font-black text-destructive">Kick</button>
                         </div>
@@ -565,10 +586,11 @@ export const AdminDashboard = () => {
                    {['red', 'blue'].map((team, idx) => {
                       const isRound1 = activeMatch.round_1_status !== 'completed';
                       const currentRoundType = isRound1 ? 'red_pick' : 'blue_pick';
-                      const isArchived = isRound1 ? false : (team === 'red' ? false : activeMatch.round_2_status === 'completed');
-                      // Actually just use indices for Round 1 / Round 2
                       const isHome = (team === 'red' && isRound1) || (team === 'blue' && !isRound1);
                       const teamFakeCards = team === 'red' ? redTeamFakeCards : blueTeamFakeCards;
+                      const player = team === 'red' ? redPlayer : bluePlayer;
+                      const useJoker = team === 'red' ? applyRedJoker : applyBlueJoker;
+                      const setUseJoker = team === 'red' ? setApplyRedJoker : setApplyBlueJoker;
 
                       return (
                         <div key={team} className={`space-y-6 ${(idx === 0 && activeMatch.round_1_status === 'completed') || (idx === 1 && activeMatch.round_2_status === 'completed') ? 'opacity-30 grayscale pointer-events-none' : ''}`}>
@@ -579,75 +601,82 @@ export const AdminDashboard = () => {
                               <p className="text-[10px] font-black uppercase opacity-60 mt-1">{isHome ? "Joker Multiplier applies" : "Away - Fixed 1.0x"}</p>
                            </div>
                            <form onSubmit={(e)=>handleCommitRound(e, currentRoundType)} className="bg-card p-10 rounded-b-[3rem] border-x-4 border-b-4 border-white/5 shadow-2xl space-y-8">
-                              {/* Scoring Logic here */}
-                              <div className="grid grid-cols-2 gap-10">
-                                 {/* Red Input in this round */}
+                              <div className="grid grid-cols-1 gap-10">
                                  <div className="space-y-6">
-                                    <h4 className="font-black text-red-600 border-b-2 border-red-600/10 pb-2 uppercase italic">{activeMatch.red_player_name}</h4>
+                                    <div className="flex justify-between items-center border-b-2 pb-3" style={{borderColor: team === 'red' ? 'rgba(220,38,38,0.2)' : 'rgba(37,99,235,0.2)'}}>
+                                       <h4 className={`font-black text-xl uppercase italic ${team === 'red' ? 'text-red-600' : 'text-blue-600'}`}>{player?.username}</h4>
+                                       <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase ${isHome ? (team === 'red' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white') : 'bg-neutral-600 text-white'}`}>{isHome ? 'HOME' : 'Away'}</span>
+                                    </div>
+                                    
                                     <div className="space-y-2">
-                                       <label className="text-[10px] font-black uppercase opacity-50">基础分</label>
-                                       <input name="red_base" type="number" step="any" required className="w-full bg-muted p-4 rounded-xl font-black text-2xl text-center" />
+                                       <label className="text-[10px] font-black uppercase opacity-50 tracking-widest">1. 基础分 Manual Base</label>
+                                       <input name={`${team}_base`} type="number" step="any" required className="w-full bg-muted p-5 rounded-2xl font-black text-4xl text-center focus:ring-8 ring-primary/10 transition-all outline-none" />
                                     </div>
-                                    <div className="space-y-2">
-                                       <label className="text-[10px] font-black uppercase opacity-50">Joker 倍率</label>
-                                       {isRound1 ? (
-                                          <input name="red_mult" type="number" step="any" defaultValue="1" className="w-full bg-purple-50 p-4 rounded-xl font-black text-2xl text-center text-purple-700 ring-4 ring-purple-600/20" />
-                                       ) : (
-                                          <input name="red_mult" type="number" value="1.0" readOnly className="w-full bg-neutral-100 p-4 rounded-xl font-black text-2xl text-center opacity-30" />
-                                       )}
+
+                                    <div className="bg-purple-600/5 p-6 rounded-3xl border-2 border-purple-600/10 space-y-4">
+                                       <div className="flex justify-between items-start">
+                                          <div>
+                                             <label className="text-[10px] font-black uppercase text-purple-600 tracking-widest block mb-1">2. Joker Multiplier</label>
+                                             <p className="font-black text-sm uppercase tracking-tighter">{player?.joker_name || 'NO JOKER'}</p>
+                                             <p className="text-[8px] font-bold text-muted-foreground italic leading-tight mt-1 max-w-[200px]">{player?.joker_description || 'No card assigned to this player'}</p>
+                                          </div>
+                                          {isHome && player?.joker_card_id && (
+                                            <label className="flex items-center gap-2 cursor-pointer bg-purple-600 text-white px-3 py-1 rounded-full shadow-lg hover:scale-105 transition-all">
+                                               <input type="checkbox" checked={useJoker} onChange={(e)=>setUseJoker(e.target.checked)} className="w-3 h-3 accent-white" />
+                                               <span className="text-[9px] font-black uppercase">应用效果?</span>
+                                            </label>
+                                          )}
+                                       </div>
+                                       
+                                       <div className="relative">
+                                          {(isHome && useJoker) ? (
+                                             <>
+                                                <input 
+                                                  name={`${team}_mult`} 
+                                                  type="number" step="any" 
+                                                  defaultValue={player?.joker_is_dynamic ? "" : "1.5"} 
+                                                  placeholder={player?.joker_is_dynamic ? "手动输入倍率" : "固定倍率"}
+                                                  readOnly={!player?.joker_is_dynamic}
+                                                  className={`w-full p-5 rounded-2xl font-black text-4xl text-center outline-none transition-all ${player?.joker_is_dynamic ? 'bg-purple-100 ring-4 ring-purple-600/20' : 'bg-purple-50 opacity-80'}`} 
+                                                />
+                                                {!player?.joker_is_dynamic && <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 font-black text-6xl">FIXED</div>}
+                                             </>
+                                          ) : (
+                                             <input value="1.0" readOnly className="w-full bg-neutral-100 p-5 rounded-2xl font-black text-4xl text-center opacity-30 cursor-not-allowed border-none outline-none" />
+                                          )}
+                                       </div>
                                     </div>
-                                    <div className="space-y-2">
-                                       <label className="text-[10px] font-black uppercase opacity-50">塔罗牌</label>
-                                       <select name="red_tarot" className="w-full bg-muted p-3 rounded-xl font-bold text-xs uppercase"><option value="">NONE</option>{tarots.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                       <div className="space-y-2">
+                                          <label className="text-[10px] font-black uppercase opacity-50 tracking-widest text-center block">3. 塔罗牌 Tarot</label>
+                                          <select name={`${team}_tarot`} className="w-full bg-muted p-4 rounded-2xl font-bold text-xs uppercase appearance-none text-center cursor-pointer hover:bg-muted/80">
+                                             <option value="">NONE</option>
+                                             {tarots.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+                                          </select>
+                                       </div>
+                                       <div className="space-y-2">
+                                          <label className="text-[10px] font-black uppercase opacity-50 tracking-widest text-center block">4. 牌组 Hand</label>
+                                          <input name={`${team}_hand`} placeholder="POKER HAND" className="w-full bg-muted p-4 rounded-2xl font-black text-xs uppercase text-center outline-none" />
+                                       </div>
                                     </div>
-                                    <input name="red_hand" placeholder="POKER HAND" className="w-full bg-muted p-3 rounded-xl font-black text-xs uppercase" />
-                                    {/* Fake Cards Checklist for Red */}
-                                    <div className="bg-muted/30 p-4 rounded-2xl space-y-2 border border-white/5">
-                                       <p className="text-[8px] font-black uppercase opacity-50 mb-2">Team Fake Cards (Red)</p>
-                                       {redTeamFakeCards.map(f => (
-                                         <label key={f.id} className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-1 rounded transition-all">
-                                            <input type="checkbox" name="red_fake_cards" value={f.card_id} className="w-3 h-3 accent-primary" />
-                                            <span className="text-[10px] font-black uppercase italic tracking-tighter">{f.card_name}</span>
-                                         </label>
-                                       ))}
-                                       {redTeamFakeCards.length === 0 && <p className="text-[8px] font-bold opacity-20 italic">No assets earned</p>}
-                                    </div>
-                                 </div>
-                                 {/* Blue Input in this round */}
-                                 <div className="space-y-6">
-                                    <h4 className="font-black text-blue-600 border-b-2 border-blue-600/10 pb-2 uppercase italic">{activeMatch.blue_player_name}</h4>
-                                    <div className="space-y-2">
-                                       <label className="text-[10px] font-black uppercase opacity-50">基础分</label>
-                                       <input name="blue_base" type="number" step="any" required className="w-full bg-muted p-4 rounded-xl font-black text-2xl text-center" />
-                                    </div>
-                                    <div className="space-y-2">
-                                       <label className="text-[10px] font-black uppercase opacity-50">Joker 倍率</label>
-                                       {!isRound1 ? (
-                                          <input name="blue_mult" type="number" step="any" defaultValue="1" className="w-full bg-purple-50 p-4 rounded-xl font-black text-2xl text-center text-purple-700 ring-4 ring-purple-600/20" />
-                                       ) : (
-                                          <input name="blue_mult" type="number" value="1.0" readOnly className="w-full bg-neutral-100 p-4 rounded-xl font-black text-2xl text-center opacity-30" />
-                                       )}
-                                    </div>
-                                    <div className="space-y-2">
-                                       <label className="text-[10px] font-black uppercase opacity-50">塔罗牌</label>
-                                       <select name="blue_tarot" className="w-full bg-muted p-3 rounded-xl font-bold text-xs uppercase"><option value="">NONE</option>{tarots.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select>
-                                    </div>
-                                    <input name="blue_hand" placeholder="POKER HAND" className="w-full bg-muted p-3 rounded-xl font-black text-xs uppercase" />
-                                    {/* Fake Cards Checklist for Blue */}
-                                    <div className="bg-muted/30 p-4 rounded-2xl space-y-2 border border-white/5">
-                                       <p className="text-[8px] font-black uppercase opacity-50 mb-2">Team Fake Cards (Blue)</p>
-                                       {blueTeamFakeCards.map(f => (
-                                         <label key={f.id} className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-1 rounded transition-all">
-                                            <input type="checkbox" name="blue_fake_cards" value={f.card_id} className="w-3 h-3 accent-blue-600" />
-                                            <span className="text-[10px] font-black uppercase italic tracking-tighter">{f.card_name}</span>
-                                         </label>
-                                       ))}
-                                       {blueTeamFakeCards.length === 0 && <p className="text-[8px] font-bold opacity-20 italic">No assets earned</p>}
+
+                                    <div className="bg-emerald-600/5 p-4 rounded-2xl space-y-2 border border-emerald-600/10">
+                                       <p className="text-[9px] font-black uppercase text-emerald-600 tracking-widest mb-2">Team Fake Cards ({team})</p>
+                                       <div className="grid grid-cols-2 gap-2">
+                                          {teamFakeCards.map(f => (
+                                            <label key={f.id} className="flex items-center gap-2 cursor-pointer hover:bg-emerald-600/10 p-2 rounded-xl transition-all border border-transparent hover:border-emerald-600/20">
+                                               <input type="checkbox" name={`${team}_fake_cards`} value={f.card_id} className={`w-3 h-3 ${team === 'red' ? 'accent-red-600' : 'accent-blue-600'}`} />
+                                               <span className="text-[9px] font-black uppercase italic tracking-tighter truncate">{f.card_name}</span>
+                                            </label>
+                                          ))}
+                                       </div>
+                                       {teamFakeCards.length === 0 && <p className="text-[8px] font-bold opacity-20 italic text-center py-2">NO TEAM ASSETS EARNED</p>}
                                     </div>
                                  </div>
                               </div>
-                              <button type="submit" className={`w-full ${isRound1 ? 'bg-red-600' : 'bg-blue-600'} text-white font-black py-6 rounded-2xl text-xl shadow-xl uppercase italic`}>
-                                 Commit Round {isRound1 ? '1' : '2'} Archive
+                              <button type="submit" className={`w-full ${team === 'red' ? 'bg-red-600 shadow-red-600/30' : 'bg-blue-600 shadow-blue-600/30'} text-white font-black py-8 rounded-[2rem] text-2xl uppercase tracking-[0.2em] shadow-2xl hover:scale-[1.02] active:scale-95 transition-all italic border-b-8 border-black/20`}>
+                                 Commit Round {isRound1 ? '1' : '2'} Data
                               </button>
                            </form>
                         </div>
@@ -659,7 +688,7 @@ export const AdminDashboard = () => {
         </div>
       )}
       
-      {/* Tab: Achievements (Re-adding the Authority table from v6.1) */}
+      {/* Tab: Achievements */}
       {activeTab === 'achievements' && (
          <div className="bg-card p-10 rounded-[3rem] border shadow-xl overflow-hidden">
            <h3 className="text-2xl font-black italic mb-8 uppercase tracking-tighter">Achievement Authority</h3>
