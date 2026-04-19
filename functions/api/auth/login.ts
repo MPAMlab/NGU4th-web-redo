@@ -21,9 +21,11 @@ export const onRequest: PagesFunction<{
     .replace(/\//g, "_")
     .replace(/=+$/, "");
 
+  const callbackUrl = `${env.KINDE_SITE_URL.replace(/\/$/, "")}/api/auth/callback`;
+
   const loginUrl = new URL(`${env.KINDE_ISSUER_URL}/oauth2/auth`);
   loginUrl.searchParams.set("client_id", env.KINDE_CLIENT_ID);
-  loginUrl.searchParams.set("redirect_uri", `${env.KINDE_SITE_URL}/api/auth/callback`);
+  loginUrl.searchParams.set("redirect_uri", callbackUrl);
   loginUrl.searchParams.set("response_type", "code");
   loginUrl.searchParams.set("scope", "openid profile email");
   loginUrl.searchParams.set("state", state);

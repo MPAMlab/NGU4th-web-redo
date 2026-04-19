@@ -18,6 +18,7 @@ export const onRequest: PagesFunction<{
   }
 
   const codeVerifier = storedVerifierMatch ? storedVerifierMatch[1] : "";
+  const callbackUrl = `${env.KINDE_SITE_URL.replace(/\/$/, "")}/api/auth/callback`;
 
   const tokenUrl = `${env.KINDE_ISSUER_URL}/oauth2/token`;
   const response = await fetch(tokenUrl, {
@@ -29,7 +30,7 @@ export const onRequest: PagesFunction<{
       client_secret: env.KINDE_CLIENT_SECRET,
       code,
       code_verifier: codeVerifier,
-      redirect_uri: `${env.KINDE_SITE_URL}/api/auth/callback`,
+      redirect_uri: callbackUrl,
     }),
   });
 

@@ -15,18 +15,23 @@ export const onRequest: PagesFunction<{
   }
 
   // Verify admin role
-  const user: any = await env.DB.prepare("SELECT role FROM ngu4th_members WHERE kinde_id = ?")
+  const adminUser: any = await env.DB.prepare("SELECT role FROM ngu4th_members WHERE kinde_id = ?")
     .bind(adminId).first();
-  if (user?.role !== 'admin') return new Response("Forbidden", { status: 403 });
+  if (adminUser?.role !== 'admin') return new Response("Forbidden", { status: 403 });
 
   if (request.method === "GET") {
-    // List all achievements, users, and mappings
-    const achievements = await env.DB.prepare("SELECT * FROM ngu4th_achievements").all();
+    // List all templates
+    const templates = await env.DB.prepare("SELECT * FROM ngu4th_achievements ORDER BY id ASC").all();
+    // List all members
     const members = await env.DB.prepare("SELECT kinde_id, username, email FROM ngu4th_members").all();
-    const userAchievements = await env.DB.prepare("SELECT kinde_id, achievement_id FROM ngu4th_user_achievements").all();
-    
+    // List all user achievement instances
+    const userAchievements = await env.DB.prepare(`
+        SELECT ua.id as instance_id, ua.kinde_id, ua.achievement_id, ua.earned_at
+        FROM ngu4th_user_achievements ua
+    `).all();
+
     return new Response(JSON.stringify({ 
-      achievements: achievements.results, 
+      templates: templates.results, 
       members: members.results,
       userAchievements: userAchievements.results
     }), {
@@ -35,14 +40,18 @@ export const onRequest: PagesFunction<{
   }
 
   if (request.method === "POST") {
-    const { targetKindeId, achievementId, action } = await request.json() as any;
+    const { targetKindeId, achievementId, action, instanceId } = await request.json() as any;
     
     if (action === 'grant') {
-      await env.DB.prepare("INSERT OR IGNORE INTO ngu4th_user_achievements (kinde_id, achievement_id, granted_by) VALUES (?, ?, ?)")
-        .bind(targetKindeId, achievementId, adminId).run();
-    } else if (action === 'revoke') {
-      await env.DB.prepare("DELETE FROM ngu4th_user_achievements WHERE kinde_id = ? AND achievement_id = ?")
+      await env.DB.prepare("INSERT OR IGNORE INTO ngu4th_user_achievements (kinde_id, achievement_id) VALUES (?, ?)")
         .bind(targetKindeId, achievementId).run();
+    } else if (action === 'revoke') {
+      if (instanceId) {
+        await env.DB.prepare("DELETE FROM ngu4th_user_achievements WHERE id = ?").bind(instanceId).run();
+      } else {
+        await env.DB.prepare("DELETE FROM ngu4th_user_achievements WHERE kinde_id = ? AND achievement_id = ?")
+          .bind(targetKindeId, achievementId).run();
+      }
     }
 
     return new Response(JSON.stringify({ success: true }), {
