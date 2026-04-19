@@ -19,17 +19,23 @@ export const onRequest: PagesFunction<{
   if (request.method === "GET") {
     const member = await env.DB.prepare("SELECT * FROM ngu4th_members WHERE kinde_id = ?")
       .bind(kindeId).first();
-    return new Response(JSON.stringify(member), {
+    
+    const roster = await env.DB.prepare("SELECT username, team FROM ngu4th_members WHERE is_registered = 1").all();
+
+    return new Response(JSON.stringify({
+      currentUser: member,
+      publicRoster: roster.results || []
+    }), {
       headers: { "Content-Type": "application/json" }
     });
   }
 
   if (request.method === "POST") {
-    const { action } = await request.json() as { action: string };
+    const { action, team } = await request.json() as { action: string, team?: string };
     
     if (action === "register") {
-      await env.DB.prepare("UPDATE ngu4th_members SET is_registered = 1 WHERE kinde_id = ?")
-        .bind(kindeId).run();
+      await env.DB.prepare("UPDATE ngu4th_members SET is_registered = 1, team = ? WHERE kinde_id = ?")
+        .bind(team || null, kindeId).run();
       // HOOK: Check achievements for registration
       await checkAchievements(env.DB, kindeId, { type: 'registration' });
     } else if (action === "cancel") {
