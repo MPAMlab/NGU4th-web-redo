@@ -20,11 +20,8 @@ export const onRequest: PagesFunction<{
   if (adminUser?.role !== 'admin') return new Response("Forbidden", { status: 403 });
 
   if (request.method === "GET") {
-    // List all templates
     const templates = await env.DB.prepare("SELECT * FROM ngu4th_achievements ORDER BY id ASC").all();
-    // List all members
     const members = await env.DB.prepare("SELECT kinde_id, username, email FROM ngu4th_members").all();
-    // List all user achievement instances
     const userAchievements = await env.DB.prepare(`
         SELECT ua.id as instance_id, ua.kinde_id, ua.achievement_id, ua.earned_at
         FROM ngu4th_user_achievements ua
@@ -40,7 +37,8 @@ export const onRequest: PagesFunction<{
   }
 
   if (request.method === "POST") {
-    const { targetKindeId, achievementId, action, instanceId } = await request.json() as any;
+    const body = await request.json() as any;
+    const { action, targetKindeId, achievementId, instanceId, name, condition, scene, notes } = body;
     
     if (action === 'grant') {
       await env.DB.prepare("INSERT OR IGNORE INTO ngu4th_user_achievements (kinde_id, achievement_id) VALUES (?, ?)")
@@ -52,6 +50,16 @@ export const onRequest: PagesFunction<{
         await env.DB.prepare("DELETE FROM ngu4th_user_achievements WHERE kinde_id = ? AND achievement_id = ?")
           .bind(targetKindeId, achievementId).run();
       }
+    } else if (action === 'create_template') {
+      await env.DB.prepare("INSERT INTO ngu4th_achievements (name, condition, scene, notes) VALUES (?, ?, ?, ?)")
+        .bind(name, condition, scene, notes).run();
+    } else if (action === 'update_template') {
+      await env.DB.prepare("UPDATE ngu4th_achievements SET name = ?, condition = ?, scene = ?, notes = ? WHERE id = ?")
+        .bind(name, condition, scene, notes, achievementId).run();
+    } else if (action === 'delete_template') {
+      // Also delete associations
+      await env.DB.prepare("DELETE FROM ngu4th_user_achievements WHERE achievement_id = ?").bind(achievementId).run();
+      await env.DB.prepare("DELETE FROM ngu4th_achievements WHERE id = ?").bind(achievementId).run();
     }
 
     return new Response(JSON.stringify({ success: true }), {
