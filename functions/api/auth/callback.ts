@@ -7,7 +7,17 @@ export const onRequest: PagesFunction<{
 }> = async ({ request, env }) => {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  if (!code) return new Response("No code provided", { status: 400 });
+  const state = url.searchParams.get("state");
+  
+  const cookieHeader = request.headers.get("Cookie") || "";
+  const storedStateMatch = cookieHeader.match(/kinde_auth_state=([^;]+)/);
+  const storedVerifierMatch = cookieHeader.match(/kinde_auth_verifier=([^;]+)/);
+
+  if (!code || !state || !storedStateMatch || state !== storedStateMatch[1]) {
+    return new Response("Invalid state or missing code", { status: 400 });
+  }
+
+  const codeVerifier = storedVerifierMatch ? storedVerifierMatch[1] : "";
 
   const tokenUrl = `${env.KINDE_ISSUER_URL}/oauth2/token`;
   const response = await fetch(tokenUrl, {
@@ -18,6 +28,7 @@ export const onRequest: PagesFunction<{
       client_id: env.KINDE_CLIENT_ID,
       client_secret: env.KINDE_CLIENT_SECRET,
       code,
+      code_verifier: codeVerifier,
       redirect_uri: `${env.KINDE_SITE_URL}/api/auth/callback`,
     }),
   });
