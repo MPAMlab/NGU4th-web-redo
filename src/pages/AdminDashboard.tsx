@@ -23,6 +23,7 @@ interface Member {
   joker_name?: string;
   joker_multiplier?: number;
   joker_is_variable?: number;
+  joker_description?: string;
 }
 
 interface Match {
@@ -157,6 +158,20 @@ export const AdminDashboard = () => {
     if (res.ok) { setEditingCard(null); fetchData(true); }
   };
 
+  const handleCreateMatch = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const redPlayerId = formData.get('red') as string;
+    const bluePlayerId = formData.get('blue') as string;
+    if (!redPlayerId || !bluePlayerId) return;
+    await fetch('/api/admin/matches', { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'create', redPlayerId, bluePlayerId, orderIndex: matches.length }) 
+    });
+    fetchData(true);
+  };
+
   const handleSetActiveMatch = async (matchId: string | null) => {
     await fetch('/api/admin/system', { 
       method: 'POST', 
@@ -251,7 +266,7 @@ export const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Tab: Achievement Templates (NEW CRUD) */}
+      {/* Tab: Achievement Templates */}
       {activeTab === 'templates' && (
          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 animate-in fade-in duration-300">
             <div className="lg:col-span-1 space-y-4">
@@ -270,8 +285,8 @@ export const AdminDashboard = () => {
                </div>
             </div>
             <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-               <div className="bg-slate-50 p-3 px-4 border-b font-black text-[9px] uppercase tracking-widest text-slate-400 flex justify-between items-center"><span>Achievement Library Achievement Definitions</span><Badge variant="outline">{achievements.length} Templates</Badge></div>
-               <div className="overflow-auto max-h-[600px]"><table className="w-full text-left text-xs"><thead className="bg-slate-50 font-black border-b sticky top-0 bg-slate-50 z-10"><tr><th className="p-3">成就名称</th><th className="p-3">达成条件</th><th className="p-3">场景</th><th className="p-3 text-right">Ops</th></tr></thead><tbody className="divide-y divide-slate-100">{achievements.map(tpl => (<tr key={tpl.id} className="hover:bg-slate-50"><td className="p-3 font-black uppercase text-indigo-600">{tpl.name}</td><td className="p-3 text-slate-500 italic">{tpl.condition}</td><td className="p-3"><Badge variant="secondary" className="bg-opacity-50">{tpl.scene}</Badge></td><td className="p-3 text-right"><div className="flex justify-end gap-1"><button onClick={()=>setEditingTemplate(tpl)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"><Edit size={14}/></button><button onClick={()=>{if(confirm('Delete?')) handleAchievementAction('delete_template', { achievementId: tpl.id })}} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={14}/></button></div></td></tr>))}</tbody></table></div>
+               <div className="bg-slate-50 p-3 px-4 border-b font-black text-[9px] uppercase tracking-widest text-slate-400 flex justify-between items-center"><span>Achievement Definitions</span><Badge variant="outline">{achievements.length} Templates</Badge></div>
+               <div className="overflow-auto max-h-[600px]"><table className="w-full text-left text-xs"><thead className="bg-slate-50 font-black border-b sticky top-0 z-10"><tr><th className="p-3">成就名称</th><th className="p-3">达成条件</th><th className="p-3">场景</th><th className="p-3 text-right">Ops</th></tr></thead><tbody className="divide-y divide-slate-100">{achievements.map(tpl => (<tr key={tpl.id} className="hover:bg-slate-50"><td className="p-3 font-black uppercase text-indigo-600">{tpl.name}</td><td className="p-3 text-slate-500 italic">{tpl.condition}</td><td className="p-3"><Badge variant="secondary" className="bg-opacity-50">{tpl.scene}</Badge></td><td className="p-3 text-right"><div className="flex justify-end gap-1"><button onClick={()=>setEditingTemplate(tpl)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"><Edit size={14}/></button><button onClick={()=>{if(confirm('Delete?')) handleAchievementAction('delete_template', { achievementId: tpl.id })}} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={14}/></button></div></td></tr>))}</tbody></table></div>
             </div>
          </div>
       )}
