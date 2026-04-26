@@ -33,6 +33,7 @@ interface Member {
   kinde_id: string;
   username: string;
   email: string;
+  role: string;
   is_registered: number;
   team: string | null;
   team_order: number;
@@ -364,11 +365,11 @@ export const AdminDashboard = () => {
                       <option value="registration">完成报名</option>
                       <option value="team_join">加入队伍</option>
                       <option value="role_eq">身份等于</option>
-                      <option value="score_ge">单轮分数 >= n</option>
-                      <option value="contribution_ge">最终贡献 >= n</option>
+                      <option value="score_ge">单轮分数 {'>'}= n</option>
+                      <option value="contribution_ge">最终贡献 {'>'}= n</option>
                       <option value="poker_hand_eq">私牌牌型等于</option>
-                      <option value="stamp_count">集邮数 >= n</option>
-                      <option value="staff_stamp_count">Staff集邮数 >= n</option>
+                      <option value="stamp_count">集邮数 {'>'}= n</option>
+                      <option value="staff_stamp_count">Staff集邮数 {'>'}= n</option>
                       <option value="special_scannee">和特定人集邮</option>
                       <option value="minigame_win">赢得小游戏</option>
                       <option value="qr_text">文本扫码</option>
