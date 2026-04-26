@@ -37,27 +37,29 @@ function App() {
 
   const fetchStatus = async (isInitial = false) => {
     try {
-      const [authData, sysData] = await Promise.all([
-        fetch('/api/auth/me').then(res => res.json()),
-        fetch('/api/admin/system').then(res => res.json())
+      const [authRes, sysRes] = await Promise.all([
+        fetch('/api/auth/me'),
+        fetch('/api/admin/system')
       ]);
       
-      if (authData.user) {
-        if (!isInitial) {
-           // Check for new achievements
-           const fresh = authData.achievements.filter((a: Achievement) => !prevAchievementIds.current.has(a.id));
-           if (fresh.length > 0) {
-              setNewAchievements(prev => [...prev, ...fresh]);
-           }
+      if (authRes.ok) {
+        const authData = await authRes.json();
+        if (authData.user) {
+          if (!isInitial) {
+             const fresh = authData.achievements.filter((a: Achievement) => !prevAchievementIds.current.has(a.id));
+             if (fresh.length > 0) setNewAchievements(prev => [...prev, ...fresh]);
+          }
+          authData.achievements.forEach((a: Achievement) => prevAchievementIds.current.add(a.id));
+          setAuth(authData);
+        } else {
+          setAuth(null);
         }
-        // Update known IDs
-        authData.achievements.forEach((a: Achievement) => prevAchievementIds.current.add(a.id));
-        setAuth(authData);
-      } else {
-        setAuth(null);
       }
-      
-      setActiveGame(sysData.games?.find((g: any) => g.status === 'active'));
+
+      if (sysRes.ok) {
+        const sysData = await sysRes.json();
+        setActiveGame(sysData.games?.find((g: any) => g.status === 'active'));
+      }
     } catch (e) {
       console.error("Polling error", e);
     } finally {

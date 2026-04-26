@@ -3,21 +3,24 @@ export const onRequest: PagesFunction<{
 }> = async ({ request, env }) => {
   const cookieHeader = request.headers.get("Cookie") || "";
   const match = cookieHeader.match(/auth_token=([^;]+)/);
-  if (!match) return new Response("Unauthorized", { status: 401 });
+  if (!match) return new Response("Missing auth_token cookie", { status: 401 });
 
   const idToken = match[1];
   let adminId: string;
   try {
-    const payload = JSON.parse(atob(idToken.split(".")[1]));
+    const payloadPart = idToken.split(".")[1];
+    if (!payloadPart) throw new Error("Invalid JWT format");
+    const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(base64));
     adminId = payload.sub;
-  } catch (e) {
-    return new Response("Invalid token", { status: 401 });
+  } catch (e: any) {
+    return new Response(`Invalid token: ${e.message}`, { status: 401 });
   }
 
   // Verify admin role
   const adminUser: any = await env.DB.prepare("SELECT role FROM ngu4th_members WHERE kinde_id = ?")
     .bind(adminId).first();
-  if (adminUser?.role !== 'admin') return new Response("Forbidden", { status: 403 });
+  if (adminUser?.role !== 'admin') return new Response(`Forbidden: User role is ${adminUser?.role}`, { status: 403 });
 
   if (request.method === "GET") {
     // Fetch card library
