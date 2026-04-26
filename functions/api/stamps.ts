@@ -46,7 +46,7 @@ export const onRequest: PagesFunction<{
           .bind(kindeId, scanneeId).run();
         
         // HOOK: Check achievements for stamps
-        await checkAchievements(env.DB, kindeId, { type: 'stamp' });
+        await checkAchievements(env.DB, kindeId, { type: 'stamp', scanneeId: scanneeId });
       }
 
       return new Response(JSON.stringify({ success: true }), {

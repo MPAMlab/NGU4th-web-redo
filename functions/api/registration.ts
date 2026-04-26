@@ -38,6 +38,9 @@ export const onRequest: PagesFunction<{
         .bind(team || null, kindeId).run();
       // HOOK: Check achievements for registration
       await checkAchievements(env.DB, kindeId, { type: 'registration' });
+      if (team) {
+        await checkAchievements(env.DB, kindeId, { type: 'team_join' });
+      }
     } else if (action === "cancel") {
       await env.DB.prepare("UPDATE ngu4th_members SET is_registered = 0, team = NULL WHERE kinde_id = ?")
         .bind(kindeId).run();

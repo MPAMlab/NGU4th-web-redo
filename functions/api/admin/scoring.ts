@@ -48,7 +48,12 @@ export const onRequest: PagesFunction<{
       ).run();
 
       // HOOK: Check achievements for score
-      await checkAchievements(env.DB, playerId, { type: 'score', value: totalScore });
+      await checkAchievements(env.DB, playerId, { 
+        type: 'score', 
+        value: totalScore,
+        pokerHand: data.hand,
+        fakeCards: data.fakeCards
+      });
       
       return totalScore;
     };

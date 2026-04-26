@@ -1,3 +1,5 @@
+import { checkAchievements } from "../../lib/achievements";
+
 export const onRequest: PagesFunction<{
   DB: D1Database;
 }> = async ({ request, env }) => {
@@ -62,7 +64,7 @@ export const onRequest: PagesFunction<{
       await env.DB.prepare("UPDATE ngu4th_minigames SET status = 'finished', winner_id = ? WHERE id = ?")
         .bind(winner_id || null, id).run();
 
-      // 2. If winner exists, grant the fake card to their team
+      // 2. If winner exists, grant the fake card to their team and check achievements
       if (winner_id) {
         const winner: any = await env.DB.prepare("SELECT team FROM ngu4th_members WHERE kinde_id = ?").bind(winner_id).first();
         const game: any = await env.DB.prepare("SELECT fake_card_id FROM ngu4th_minigames WHERE id = ?").bind(id).first();
@@ -71,6 +73,8 @@ export const onRequest: PagesFunction<{
           await env.DB.prepare("INSERT INTO ngu4th_inventory (card_id, owner_type, owner_id) VALUES (?, 'team', ?)")
             .bind(game.fake_card_id, winner.team).run();
         }
+
+        await checkAchievements(env.DB, winner_id, { type: 'minigame_win', minigameId: id });
       }
     } else if (action === 'delete') {
       await env.DB.prepare("DELETE FROM ngu4th_minigame_participants WHERE minigame_id = ?").bind(id).run();

@@ -97,21 +97,47 @@ const QRScannerComp = ({ onScan }: { onScan: (id: string) => void }) => {
   );
 };
 
+interface Card {
+  id: number;
+  name: string;
+  type: string;
+  description: string;
+  multiplier?: number;
+  exponent_bonus?: number;
+  status?: string;
+}
+
+interface RankingEntry {
+  username: string;
+  team: string;
+  achievement_count: number;
+}
+
 export const DashboardPage = ({ user, achievements, activeGame }: { user: User, achievements: Achievement[], activeGame: GameSettings | null }) => {
   const [minigames, setMinigames] = useState<Minigame[]>([]);
   const [stamps, setStamps] = useState<Stamp[]>([]);
+  const [inventory, setInventory] = useState<Card[]>([]);
+  const [allCards, setAllCards] = useState<Card[]>([]);
+  const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'home' | 'challenges' | 'achievements' | 'stamps' | 'profile'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'challenges' | 'achievements' | 'stamps' | 'inventory' | 'profile'>('home');
+  const [inventorySubTab, setInventorySubTab] = useState<'team' | 'gallery'>('team');
   const [manualScanId, setManualScanId] = useState('');
 
   const fetchData = async () => {
     try {
-      const [miniRes, stampRes] = await Promise.all([
+      const [miniRes, stampRes, invRes, cardRes, rankRes] = await Promise.all([
         fetch('/api/minigames'),
-        fetch('/api/stamps')
+        fetch('/api/stamps'),
+        fetch('/api/inventory'),
+        fetch('/api/cards'),
+        fetch('/api/rankings')
       ]);
       if (miniRes.ok) setMinigames(await miniRes.json());
       if (stampRes.ok) setStamps(await stampRes.json());
+      if (invRes.ok) setInventory(await invRes.json());
+      if (cardRes.ok) setAllCards(await cardRes.json());
+      if (rankRes.ok) setRankings(await rankRes.json());
     } catch (e) {
       console.error("Failed to fetch dashboard data");
     }
@@ -149,6 +175,7 @@ export const DashboardPage = ({ user, achievements, activeGame }: { user: User, 
     { id: 'home', label: '对阵报名', icon: <BookOpen size={20} />, visible: true },
     { id: 'challenges', label: '小游戏', icon: <Zap size={20} />, visible: activeGame?.show_minigames === 1 },
     { id: 'stamps', label: '集邮', icon: <QrCode size={20} />, visible: activeGame?.show_stamps === 1 },
+    { id: 'inventory', label: '卡牌库', icon: <Swords size={20} />, visible: activeGame?.show_cards === 1 },
     { id: 'achievements', label: '积分排行', icon: <Trophy size={20} />, visible: activeGame?.show_achievements === 1 },
     { id: 'profile', label: '个人中心', icon: <User size={20} />, visible: true }
   ].filter(t => t.visible);
@@ -231,11 +258,113 @@ export const DashboardPage = ({ user, achievements, activeGame }: { user: User, 
           </div>
         )}
 
-        {/* Other tabs remain same but with visibility checks ... */}
-        {activeTab === 'achievements' && (
+        {activeTab === 'inventory' && (
           <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-             <div className="flex items-center justify-between border-b-2 border-slate-100 pb-4"><div className="flex items-center gap-4"><div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center shadow-lg"><Trophy size={24} fill="currentColor" /></div><div><h2 className="text-3xl font-black italic uppercase tracking-tighter text-slate-900">成就收藏库</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Locked Assets</p></div></div><Badge variant="secondary">Total: {achievements.length}</Badge></div>
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{achievements.map(a => (<div key={a.id} className="bg-white p-6 rounded-[2rem] border-2 border-slate-100 shadow-xl flex items-center gap-6 group hover:border-amber-200 transition-all"><div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg border-2 border-amber-100/50"><Star size={24} fill="currentColor" /></div><div className="space-y-1"><p className="font-black text-lg uppercase text-slate-900 leading-none">{a.name}</p><p className="text-[9px] font-bold text-slate-400 uppercase italic leading-relaxed mt-1">{a.condition}</p></div></div>))}</div>
+             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex items-center gap-4 px-2">
+                   <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center shadow-lg"><Swords size={24} fill="currentColor" /></div>
+                   <div>
+                      <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">战术卡牌库</h2>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Team Assets & Gallery</p>
+                   </div>
+                </div>
+                <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1">
+                   <button onClick={() => setInventorySubTab('team')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${inventorySubTab === 'team' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>我的队伍 My Team</button>
+                   <button onClick={() => setInventorySubTab('gallery')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${inventorySubTab === 'gallery' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>卡牌图鉴 Gallery</button>
+                </div>
+             </div>
+
+             {inventorySubTab === 'team' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                   {inventory.map((card, i) => (
+                      <div key={i} className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-100 shadow-xl hover:border-indigo-200 transition-all group relative overflow-hidden">
+                         <div className={`absolute top-0 right-0 px-6 py-1 rounded-bl-2xl font-black text-[9px] uppercase tracking-widest ${card.type === 'joker' ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-600'}`}>{card.type}</div>
+                         <h4 className="text-2xl font-black italic uppercase tracking-tighter text-slate-900 mb-2">{card.name}</h4>
+                         <p className="text-xs font-bold text-slate-400 italic leading-relaxed mb-6">{card.description}</p>
+                         <div className="flex gap-4 border-t-2 border-slate-50 pt-4 mt-auto">
+                            {card.multiplier && <div className="text-indigo-600 font-black italic text-xl">x{card.multiplier}</div>}
+                            {card.exponent_bonus && <div className="text-purple-600 font-black italic text-xl">+{card.exponent_bonus} EXP</div>}
+                         </div>
+                      </div>
+                   ))}
+                   {inventory.length === 0 && (
+                      <div className="col-span-full py-20 text-center opacity-20 italic font-black uppercase text-2xl tracking-widest">暂无可用卡牌 No Assets Found</div>
+                   )}
+                </div>
+             ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                   {allCards.map((card, i) => (
+                      <div key={i} className="bg-white p-6 rounded-3xl border-2 border-slate-100 hover:shadow-lg transition-all flex flex-col">
+                         <div className="flex justify-between items-start mb-4">
+                            <Badge variant="secondary">{card.type}</Badge>
+                            {inventory.find(ic => ic.id === card.id) && <Badge className="bg-green-100 text-green-600 border-none">OWNED</Badge>}
+                         </div>
+                         <h5 className="font-black text-slate-900 uppercase mb-2">{card.name}</h5>
+                         <p className="text-[10px] font-bold text-slate-400 italic leading-snug mb-4">{card.description}</p>
+                         <div className="mt-auto flex gap-3 text-[10px] font-black italic">
+                            {card.multiplier && <span className="text-indigo-600">x{card.multiplier}</span>}
+                            {card.exponent_bonus && <span className="text-purple-600">+{card.exponent_bonus} EXP</span>}
+                         </div>
+                      </div>
+                   ))}
+                </div>
+             )}
+          </div>
+        )}
+
+        {activeTab === 'achievements' && (
+          <div className="space-y-12 animate-in slide-in-from-right-4 duration-500">
+             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex items-center gap-4 px-2">
+                   <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center shadow-lg"><Trophy size={24} fill="currentColor" /></div>
+                   <div>
+                      <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">成就与荣誉榜</h2>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Locked Assets & Rankings</p>
+                   </div>
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div className="lg:col-span-2 space-y-6">
+                   <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2 px-2"><Star size={14} className="text-amber-500" /> 我的成就 COLLECTION</h3>
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {achievements.map(a => (
+                         <div key={a.id} className="bg-white p-6 rounded-[2rem] border-2 border-slate-100 shadow-xl flex items-center gap-6 group hover:border-amber-200 transition-all">
+                            <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg border-2 border-amber-100/50">
+                               <Star size={24} fill="currentColor" />
+                            </div>
+                            <div className="space-y-1">
+                               <p className="font-black text-lg uppercase text-slate-900 leading-none">{a.name}</p>
+                               <p className="text-[9px] font-bold text-slate-400 uppercase italic leading-relaxed mt-1">{a.condition}</p>
+                            </div>
+                         </div>
+                      ))}
+                   </div>
+                </div>
+
+                <div className="space-y-6">
+                   <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2 px-2"><Activity size={14} className="text-indigo-500" /> 贡献排行 RANKING</h3>
+                   <div className="bg-white rounded-[2.5rem] border-2 border-slate-100 shadow-xl overflow-hidden">
+                      <div className="max-h-[500px] overflow-y-auto">
+                         {rankings.map((r, i) => (
+                            <div key={i} className="p-6 border-b border-slate-50 flex items-center justify-between hover:bg-slate-50 transition-all">
+                               <div className="flex items-center gap-4">
+                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${i < 3 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>{i + 1}</div>
+                                  <div>
+                                     <p className="font-black text-sm uppercase text-slate-900">{r.username}</p>
+                                     <Badge variant="outline" className={`mt-1 ${r.team === 'red' ? 'text-red-500 border-red-100' : 'text-blue-500 border-blue-100'}`}>{r.team}</Badge>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                   <p className="text-xl font-black text-slate-900">{r.achievement_count}</p>
+                                   <p className="text-[8px] font-bold text-slate-400 uppercase">Achievements</p>
+                                </div>
+                            </div>
+                         ))}
+                      </div>
+                   </div>
+                </div>
+             </div>
           </div>
         )}
 

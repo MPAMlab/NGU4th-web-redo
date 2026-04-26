@@ -1,4 +1,4 @@
-export async function checkAchievements(db: D1Database, kindeId: string, context: { type: string, value?: any }) {
+export async function checkAchievements(db: D1Database, kindeId: string, context: { type: string, value?: any, [key: string]: any }) {
   // 1. Get user profile
   const user: any = await db.prepare("SELECT role, team FROM ngu4th_members WHERE kinde_id = ?").bind(kindeId).first();
   if (!user) return;
@@ -22,6 +22,9 @@ export async function checkAchievements(db: D1Database, kindeId: string, context
       case 'score_ge':
         if (context.type === 'score' && context.value >= parseFloat(tpl.trigger_value || '0')) shouldGrant = true;
         break;
+      case 'poker_hand_eq':
+        if (context.type === 'score' && context.pokerHand === tpl.trigger_value) shouldGrant = true;
+        break;
       case 'stamp_count':
         if (context.type === 'stamp') {
            const countResult: any = await db.prepare("SELECT COUNT(*) as count FROM ngu4th_stamps WHERE collector_id = ?").bind(kindeId).first();
@@ -37,6 +40,18 @@ export async function checkAchievements(db: D1Database, kindeId: string, context
            `).bind(kindeId).first();
            if (countResult.count >= parseInt(tpl.trigger_value || '0')) shouldGrant = true;
         }
+        break;
+      case 'special_scannee':
+        if (context.type === 'stamp' && context.scanneeId === tpl.trigger_value) shouldGrant = true;
+        break;
+      case 'minigame_win':
+        if (context.type === 'minigame_win') shouldGrant = true;
+        break;
+      case 'fake_card_used':
+        if (context.type === 'score' && context.fakeCards && context.fakeCards.split(',').includes(tpl.trigger_value)) shouldGrant = true;
+        break;
+      case 'any_fake_card_used':
+        if (context.type === 'score' && context.fakeCards && context.fakeCards.length > 0) shouldGrant = true;
         break;
     }
 
