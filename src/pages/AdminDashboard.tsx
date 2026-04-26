@@ -363,6 +363,7 @@ export const AdminDashboard = () => {
                    <select value={editTplForm.trigger_type || "manual"} onChange={e=>setEditTplForm({...editTplForm, trigger_type: e.target.value === 'manual' ? null : e.target.value, trigger_value: ''})} className={selectClass + " w-1/3"}>
                       <option value="manual">手动授权</option>
                       <option value="registration">完成报名</option>
+                      <option value="legacy">NGU3rd引继</option>
                       <option value="team_join">加入队伍</option>
                       <option value="role_eq">身份等于</option>
                       <option value="score_ge">单轮分数 {'>'}= n</option>
@@ -374,7 +375,14 @@ export const AdminDashboard = () => {
                       <option value="minigame_win">赢得小游戏</option>
                       <option value="qr_text">文本扫码</option>
                    </select>
-                   {editTplForm.trigger_type === 'poker_hand_eq' ? (
+                   {editTplForm.trigger_type === 'team_join' ? (
+                      <select value={editTplForm.trigger_value || ''} onChange={e=>setEditTplForm({...editTplForm, trigger_value: e.target.value})} className={selectClass + " w-2/3"}>
+                         <option value="">选择队伍...</option>
+                         <option value="red">红队 RED</option>
+                         <option value="blue">蓝队 BLUE</option>
+                         <option value="any">任意队伍 ANY</option>
+                      </select>
+                   ) : editTplForm.trigger_type === 'poker_hand_eq' ? (
                       <select value={editTplForm.trigger_value || ''} onChange={e=>setEditTplForm({...editTplForm, trigger_value: e.target.value})} className={selectClass + " w-2/3"}>
                          <option value="">选择牌型...</option>
                          {HAND_TYPES_LIST.map(h => <option key={h} value={h}>{h}</option>)}
