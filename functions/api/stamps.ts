@@ -35,18 +35,28 @@ export const onRequest: PagesFunction<{
     
     if (action === 'collect') {
       if (!scanneeId) return new Response("Missing scanneeId", { status: 400 });
-      if (scanneeId === kindeId) return new Response("Cannot scan yourself", { status: 400 });
-
-      // Check if already collected
-      const existing = await env.DB.prepare("SELECT id FROM ngu4th_stamps WHERE collector_id = ? AND scannee_id = ?")
-        .bind(kindeId, scanneeId).first();
       
-      if (!existing) {
-        await env.DB.prepare("INSERT INTO ngu4th_stamps (collector_id, scannee_id) VALUES (?, ?)")
-          .bind(kindeId, scanneeId).run();
+      // If it's a valid kinde_id (usually starts with 'kp_' or similar, but we check if user exists)
+      const targetUser: any = await env.DB.prepare("SELECT kinde_id FROM ngu4th_members WHERE kinde_id = ?")
+        .bind(scanneeId).first();
+
+      if (targetUser) {
+        if (scanneeId === kindeId) return new Response("Cannot scan yourself", { status: 400 });
+
+        // Check if already collected
+        const existing = await env.DB.prepare("SELECT id FROM ngu4th_stamps WHERE collector_id = ? AND scannee_id = ?")
+          .bind(kindeId, scanneeId).first();
         
-        // HOOK: Check achievements for stamps
-        await checkAchievements(env.DB, kindeId, { type: 'stamp', scanneeId: scanneeId });
+        if (!existing) {
+          await env.DB.prepare("INSERT INTO ngu4th_stamps (collector_id, scannee_id) VALUES (?, ?)")
+            .bind(kindeId, scanneeId).run();
+          
+          // HOOK: Check achievements for stamps
+          await checkAchievements(env.DB, kindeId, { type: 'stamp', scanneeId: scanneeId });
+        }
+      } else {
+        // Not a user ID, treat as plain text QR
+        await checkAchievements(env.DB, kindeId, { type: 'qr_text', text: scanneeId });
       }
 
       return new Response(JSON.stringify({ success: true }), {

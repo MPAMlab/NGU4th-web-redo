@@ -50,13 +50,19 @@ export const onRequest: PagesFunction<{
 
   if (request.method === "POST") {
     const body = await request.json() as any;
-    const { action, id, title, short_desc, detailed_desc, start_date, start_time, max_players, fake_card_id, winner_id } = body;
+    const { action, id, title, short_desc, detailed_desc, start_date, start_time, max_players, fake_card_id, achievement_id, winner_id } = body;
     
     if (action === 'create') {
       await env.DB.prepare(`
-        INSERT INTO ngu4th_minigames (title, short_desc, detailed_desc, start_date, start_time, max_players, fake_card_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).bind(title, short_desc, detailed_desc, start_date, start_time, max_players, fake_card_id).run();
+        INSERT INTO ngu4th_minigames (title, short_desc, detailed_desc, start_date, start_time, max_players, fake_card_id, achievement_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(title, short_desc, detailed_desc, start_date, start_time, max_players, fake_card_id, achievement_id).run();
+    } else if (action === 'update') {
+      await env.DB.prepare(`
+        UPDATE ngu4th_minigames 
+        SET title = ?, short_desc = ?, detailed_desc = ?, start_date = ?, start_time = ?, max_players = ?, fake_card_id = ?, achievement_id = ?
+        WHERE id = ?
+      `).bind(title, short_desc, detailed_desc, start_date, start_time, max_players, fake_card_id, achievement_id, id).run();
     } else if (action === 'start') {
       await env.DB.prepare("UPDATE ngu4th_minigames SET status = 'active' WHERE id = ?").bind(id).run();
     } else if (action === 'finish') {
@@ -64,16 +70,24 @@ export const onRequest: PagesFunction<{
       await env.DB.prepare("UPDATE ngu4th_minigames SET status = 'finished', winner_id = ? WHERE id = ?")
         .bind(winner_id || null, id).run();
 
-      // 2. If winner exists, grant the fake card to their team and check achievements
+      // 2. If winner exists, grant rewards
       if (winner_id) {
         const winner: any = await env.DB.prepare("SELECT team FROM ngu4th_members WHERE kinde_id = ?").bind(winner_id).first();
-        const game: any = await env.DB.prepare("SELECT fake_card_id FROM ngu4th_minigames WHERE id = ?").bind(id).first();
+        const game: any = await env.DB.prepare("SELECT fake_card_id, achievement_id FROM ngu4th_minigames WHERE id = ?").bind(id).first();
         
+        // Grant Card
         if (winner?.team && game?.fake_card_id) {
           await env.DB.prepare("INSERT INTO ngu4th_inventory (card_id, owner_type, owner_id) VALUES (?, 'team', ?)")
             .bind(game.fake_card_id, winner.team).run();
         }
 
+        // Grant specific achievement if linked
+        if (game?.achievement_id) {
+          await env.DB.prepare("INSERT OR IGNORE INTO ngu4th_user_achievements (kinde_id, achievement_id) VALUES (?, ?)")
+            .bind(winner_id, game.achievement_id).run();
+        }
+
+        // Also trigger general minigame_win check
         await checkAchievements(env.DB, winner_id, { type: 'minigame_win', minigameId: id });
       }
     } else if (action === 'delete') {

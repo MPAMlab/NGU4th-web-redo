@@ -1,11 +1,13 @@
 export async function checkAchievements(db: D1Database, kindeId: string, context: { type: string, value?: any, [key: string]: any }) {
-  // 1. Get user profile
+  // 1. 获取用户信息
   const user: any = await db.prepare("SELECT role, team FROM ngu4th_members WHERE kinde_id = ?").bind(kindeId).first();
   if (!user) return;
 
-  // 2. Find templates that might trigger
+  // 2. 获取所有带触发器的成就模板
   const templates: any = await db.prepare("SELECT * FROM ngu4th_achievements WHERE trigger_type IS NOT NULL").all();
   
+  const activeGame: any = await db.prepare("SELECT * FROM ngu4th_games WHERE status = 'active'").first();
+
   for (const tpl of templates.results) {
     let shouldGrant = false;
 
@@ -20,7 +22,22 @@ export async function checkAchievements(db: D1Database, kindeId: string, context
         if (context.type === 'registration') shouldGrant = true;
         break;
       case 'score_ge':
+        // 单轮分数 >= n
         if (context.type === 'score' && context.value >= parseFloat(tpl.trigger_value || '0')) shouldGrant = true;
+        break;
+      case 'contribution_ge':
+        // 最终贡献值 >= p (考虑到指数)
+        if (context.type === 'score' && activeGame) {
+           const team = user.team;
+           if (team) {
+              const exponent = team === 'red' ? (activeGame.red_exponent || 1) : (activeGame.blue_exponent || 1);
+              // 获取该玩家所有回合的总基础分
+              const totalBase: any = await db.prepare("SELECT SUM(total_score) as total FROM ngu4th_rounds WHERE player_id = ? AND game_id = ?")
+                .bind(kindeId, activeGame.id).first();
+              const finalP = Math.pow(totalBase.total || 0, exponent);
+              if (finalP >= parseFloat(tpl.trigger_value || '0')) shouldGrant = true;
+           }
+        }
         break;
       case 'poker_hand_eq':
         if (context.type === 'score' && context.pokerHand === tpl.trigger_value) shouldGrant = true;
@@ -42,16 +59,20 @@ export async function checkAchievements(db: D1Database, kindeId: string, context
         }
         break;
       case 'special_scannee':
+        // 和特定人员集邮 (如 Om1t)
         if (context.type === 'stamp' && context.scanneeId === tpl.trigger_value) shouldGrant = true;
         break;
+      case 'qr_text':
+        // 扫纯文本 QR
+        if (context.type === 'qr_text' && context.text === tpl.trigger_value) shouldGrant = true;
+        break;
       case 'minigame_win':
-        if (context.type === 'minigame_win') shouldGrant = true;
-        break;
-      case 'fake_card_used':
-        if (context.type === 'score' && context.fakeCards && context.fakeCards.split(',').includes(tpl.trigger_value)) shouldGrant = true;
-        break;
-      case 'any_fake_card_used':
-        if (context.type === 'score' && context.fakeCards && context.fakeCards.length > 0) shouldGrant = true;
+        // 赢得特定小游戏或任意小游戏
+        if (context.type === 'minigame_win') {
+           if (!tpl.trigger_value || tpl.trigger_value === '' || context.minigameId === tpl.trigger_value) {
+              shouldGrant = true;
+           }
+        }
         break;
     }
 

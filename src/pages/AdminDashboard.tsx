@@ -84,9 +84,14 @@ const Badge = ({ children, className, variant = 'default' }: { children: React.R
   return <span className={`${base} ${variants[variant]} ${className}`}>{children}</span>;
 };
 
+const HAND_TYPES_LIST = [
+  '五条 (Five of a Kind)', '四条', '葫芦 (Full House)', '顺子', '同花 (Flush)', '三条', '两对', '对子', '高牌', '控分大师 (私牌和=0)'
+];
+
 export const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<'members' | 'achievements' | 'templates' | 'matches' | 'live' | 'library' | 'games'>('members');
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  // ... rest of state
   const [members, setMembers] = useState<Member[]>([]);
   const [userAchievements, setUserAchievements] = useState<any[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
@@ -353,7 +358,42 @@ export const AdminDashboard = () => {
                <button onClick={()=>handleAchievementAction('create_template', { name: '新成就', condition: '达成条件', scene: '场景', notes: '', trigger_type: null, trigger_value: null, is_hidden: 0 })} className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-black uppercase text-[10px] italic shadow-lg hover:scale-105 transition-all flex items-center gap-2"><Plus size={14}/> 新建成就在线定义</button>
             </div>
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-               <table className="w-full text-left text-xs"><thead className="bg-slate-50 font-black border-b sticky top-0 z-10 text-slate-400 uppercase tracking-widest"><tr><th className="p-4">名称 / 条件</th><th className="p-4">隐藏</th><th className="p-4">自动触发逻辑 (HOOKS)</th><th className="p-4 text-right">Ops</th></tr></thead><tbody className="divide-y divide-slate-100">{achievements.map(tpl => {const isEditing = editingTplId === tpl.id; return (<tr key={tpl.id} className={isEditing ? "bg-indigo-50/50 transition-colors" : "hover:bg-slate-50"}><td className="p-4">{isEditing ? (<div className="space-y-2 w-[240px]"><input value={editTplForm.name} onChange={e=>setEditTplForm({...editTplForm, name: e.target.value})} className={inputClass} placeholder="名称" /><input value={editTplForm.condition || ''} onChange={e=>setEditTplForm({...editTplForm, condition: e.target.value})} className={inputClass + " text-[10px]"} placeholder="条件描述" /></div>) : (<div className="flex flex-col"><span className="font-black text-[11px] uppercase text-indigo-600">{tpl.name}</span><span className="opacity-40 italic font-bold text-[9px] truncate max-w-[240px]">{tpl.condition}</span></div>)}</td><td className="p-4">{isEditing ? (<input type="checkbox" checked={editTplForm.is_hidden === 1} onChange={e=>setEditTplForm({...editTplForm, is_hidden: e.target.checked?1:0})} className="w-4 h-4 accent-indigo-600" />) : (tpl.is_hidden === 1 ? <EyeOff size={14} className="text-amber-500" /> : <Eye size={14} className="opacity-20" />)}</td><td className="p-4">{isEditing ? (<div className="flex gap-2 w-[240px]"><select value={editTplForm.trigger_type || "manual"} onChange={e=>setEditTplForm({...editTplForm, trigger_type: e.target.value === 'manual' ? null : e.target.value})} className={selectClass + " w-1/2"}><option value="manual">手动授权</option><option value="registration">完成报名</option><option value="team_join">加入队伍</option><option value="role_eq">身份等于</option><option value="score_ge">单局分数 {'>'}= n</option></select><input value={editTplForm.trigger_value || ''} onChange={e=>setEditTplForm({...editTplForm, trigger_value: e.target.value})} className={inputClass + " w-1/2"} placeholder="触发值" /></div>) : (tpl.trigger_type ? <Badge variant="outline">{tpl.trigger_type}: {tpl.trigger_value}</Badge> : <span className="opacity-20 font-black italic tracking-widest text-[9px]">MANUAL</span>)}</td><td className="p-4 text-right">{isEditing ? (<div className="flex justify-end gap-1"><button onClick={()=>handleAchievementAction('update_template', { ...editTplForm, achievementId: tpl.id })} className="p-2 bg-indigo-600 text-white rounded-lg shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all"><Check size={14}/></button><button onClick={()=>setEditingTplId(null)} className="p-2 bg-slate-200 text-slate-600 rounded-lg"><X size={14}/></button></div>) : (<div className="flex justify-end gap-1"><button onClick={()=>{ setEditingTplId(tpl.id); setEditTplForm(tpl); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"><Edit size={14}/></button><button onClick={()=>{if(confirm('Delete?')) handleAchievementAction('delete_template', { achievementId: tpl.id })}} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={14}/></button></div>)}</td></tr>);})}</tbody></table>
+               <table className="w-full text-left text-xs"><thead className="bg-slate-50 font-black border-b sticky top-0 z-10 text-slate-400 uppercase tracking-widest"><tr><th className="p-4">名称 / 条件</th><th className="p-4">隐藏</th><th className="p-4">自动触发逻辑 (HOOKS)</th><th className="p-4 text-right">Ops</th></tr></thead><tbody className="divide-y divide-slate-100">{achievements.map(tpl => {const isEditing = editingTplId === tpl.id; return (<tr key={tpl.id} className={isEditing ? "bg-indigo-50/50 transition-colors" : "hover:bg-slate-50"}><td className="p-4">{isEditing ? (<div className="space-y-2 w-[240px]"><input value={editTplForm.name} onChange={e=>setEditTplForm({...editTplForm, name: e.target.value})} className={inputClass} placeholder="名称" /><input value={editTplForm.condition || ''} onChange={e=>setEditTplForm({...editTplForm, condition: e.target.value})} className={inputClass + " text-[10px]"} placeholder="条件描述" /></div>) : (<div className="flex flex-col"><span className="font-black text-[11px] uppercase text-indigo-600">{tpl.name}</span><span className="opacity-40 italic font-bold text-[9px] truncate max-w-[240px]">{tpl.condition}</span></div>)}</td><td className="p-4">{isEditing ? (<input type="checkbox" checked={editTplForm.is_hidden === 1} onChange={e=>setEditTplForm({...editTplForm, is_hidden: e.target.checked?1:0})} className="w-4 h-4 accent-indigo-600" />) : (tpl.is_hidden === 1 ? <EyeOff size={14} className="text-amber-500" /> : <Eye size={14} className="opacity-20" />)}</td><td className="p-4">{isEditing ? (<div className="flex gap-2 w-[350px]">
+                   <select value={editTplForm.trigger_type || "manual"} onChange={e=>setEditTplForm({...editTplForm, trigger_type: e.target.value === 'manual' ? null : e.target.value, trigger_value: ''})} className={selectClass + " w-1/3"}>
+                      <option value="manual">手动授权</option>
+                      <option value="registration">完成报名</option>
+                      <option value="team_join">加入队伍</option>
+                      <option value="role_eq">身份等于</option>
+                      <option value="score_ge">单轮分数 >= n</option>
+                      <option value="contribution_ge">最终贡献 >= n</option>
+                      <option value="poker_hand_eq">私牌牌型等于</option>
+                      <option value="stamp_count">集邮数 >= n</option>
+                      <option value="staff_stamp_count">Staff集邮数 >= n</option>
+                      <option value="special_scannee">和特定人集邮</option>
+                      <option value="minigame_win">赢得小游戏</option>
+                      <option value="qr_text">文本扫码</option>
+                   </select>
+                   {editTplForm.trigger_type === 'poker_hand_eq' ? (
+                      <select value={editTplForm.trigger_value || ''} onChange={e=>setEditTplForm({...editTplForm, trigger_value: e.target.value})} className={selectClass + " w-2/3"}>
+                         <option value="">选择牌型...</option>
+                         {HAND_TYPES_LIST.map(h => <option key={h} value={h}>{h}</option>)}
+                      </select>
+                   ) : editTplForm.trigger_type === 'special_scannee' ? (
+                      <select value={editTplForm.trigger_value || ''} onChange={e=>setEditTplForm({...editTplForm, trigger_value: e.target.value})} className={selectClass + " w-2/3"}>
+                         <option value="">选择选手/Staff...</option>
+                         {members.map(m => <option key={m.kinde_id} value={m.kinde_id}>{m.username} ({m.role})</option>)}
+                      </select>
+                   ) : editTplForm.trigger_type === 'role_eq' ? (
+                      <select value={editTplForm.trigger_value || ''} onChange={e=>setEditTplForm({...editTplForm, trigger_value: e.target.value})} className={selectClass + " w-2/3"}>
+                         <option value="user">User</option>
+                         <option value="admin">Admin / Staff</option>
+                      </select>
+                   ) : editTplForm.trigger_type === 'minigame_win' ? (
+                      <input value={editTplForm.trigger_value || ''} onChange={e=>setEditTplForm({...editTplForm, trigger_value: e.target.value})} className={inputClass + " w-2/3"} placeholder="小游戏ID (可选)" />
+                   ) : editTplForm.trigger_type ? (
+                      <input value={editTplForm.trigger_value || ''} onChange={e=>setEditTplForm({...editTplForm, trigger_value: e.target.value})} className={inputClass + " w-2/3"} placeholder="触发值 (n / text)" />
+                   ) : null}
+                </div>) : (tpl.trigger_type ? <Badge variant="outline">{tpl.trigger_type}: {tpl.trigger_value}</Badge> : <span className="opacity-20 font-black italic tracking-widest text-[9px]">MANUAL</span>)}</td><td className="p-4 text-right">{isEditing ? (<div className="flex justify-end gap-1"><button onClick={()=>handleAchievementAction('update_template', { ...editTplForm, achievementId: tpl.id })} className="p-2 bg-indigo-600 text-white rounded-lg shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all"><Check size={14}/></button><button onClick={()=>setEditingTplId(null)} className="p-2 bg-slate-200 text-slate-600 rounded-lg"><X size={14}/></button></div>) : (<div className="flex justify-end gap-1"><button onClick={()=>{ setEditingTplId(tpl.id); setEditTplForm(tpl); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"><Edit size={14}/></button><button onClick={()=>{if(confirm('Delete?')) handleAchievementAction('delete_template', { achievementId: tpl.id })}} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={14}/></button></div>)}</td></tr>);})}</tbody></table>
             </div>
          </div>
       )}
