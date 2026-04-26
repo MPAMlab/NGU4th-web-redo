@@ -19,7 +19,21 @@ export async function checkAchievements(db: D1Database, kindeId: string, context
         if (user.role === tpl.trigger_value) shouldGrant = true;
         break;
       case 'registration':
-        if (context.type === 'registration') shouldGrant = true;
+        if (context.type === 'registration') {
+           shouldGrant = true;
+           // 同时检查是否是 NGU3rd 引继玩家
+           const isLegacy: any = await db.prepare("SELECT kinde_user_id FROM members WHERE kinde_user_id = ?").bind(kindeId).first();
+           if (isLegacy) {
+              // 如果是老玩家，且当前正在处理注册钩子，我们需要确保 legacy 成就也能被触发
+           }
+        }
+        break;
+      case 'legacy':
+        // 专门的引继触发器
+        if (context.type === 'registration') {
+           const isLegacy: any = await db.prepare("SELECT kinde_user_id FROM members WHERE kinde_user_id = ?").bind(kindeId).first();
+           if (isLegacy) shouldGrant = true;
+        }
         break;
       case 'score_ge':
         // 单轮分数 >= n
