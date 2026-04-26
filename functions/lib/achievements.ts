@@ -36,8 +36,24 @@ export async function checkAchievements(db: D1Database, kindeId: string, context
         }
         break;
       case 'score_ge':
-        // 单轮分数 >= n
+        // 单轮总分 >= n
         if (context.type === 'score' && context.value >= parseFloat(tpl.trigger_value || '0')) shouldGrant = true;
+        break;
+      case 'base_score_ge':
+        // 单轮基础分 >= n (不考虑倍率)
+        if (context.type === 'score' && context.baseScore >= parseFloat(tpl.trigger_value || '0')) shouldGrant = true;
+        break;
+      case 'joker_used':
+        // 使用了小丑牌
+        if (context.type === 'score' && context.jokerUsed) shouldGrant = true;
+        break;
+      case 'tarot_used':
+        // 使用了塔罗牌
+        if (context.type === 'score' && context.tarotId) shouldGrant = true;
+        break;
+      case 'any_fake_card_used':
+        // 使用了任意假卡
+        if (context.type === 'score' && context.fakeCards && context.fakeCards.length > 0) shouldGrant = true;
         break;
       case 'contribution_ge':
         // 最终贡献值 >= p (考虑到指数)

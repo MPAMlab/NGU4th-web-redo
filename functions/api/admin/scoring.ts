@@ -34,7 +34,34 @@ export const onRequest: PagesFunction<{
 
     // Helper to calculate, insert and check achievements
     const commitRound = async (playerId: string, team: string, data: any) => {
-      const totalScore = parseFloat(data.baseScore) * (parseFloat(data.multiplier) || 1);
+      // 1. Get Base settings from Active Game
+      const activeGame: any = await env.DB.prepare("SELECT red_exponent, blue_exponent FROM ngu4th_games WHERE status = 'active'").first();
+      const baseTeamExponent = team === 'red' ? (activeGame?.red_exponent || 1.0) : (activeGame?.blue_exponent || 1.0);
+
+      // 2. Fetch all selected fake cards data
+      let fakeMultiplier = 1.0;
+      let fakeExponentMultiplier = 1.0;
+      
+      if (data.fakeCards) {
+        const cardIds = data.fakeCards.split(',').filter((id: string) => id.trim() !== '');
+        if (cardIds.length > 0) {
+          const placeholders = cardIds.map(() => '?').join(',');
+          const cards: any = await env.DB.prepare(`SELECT multiplier, exponent_bonus FROM ngu4th_cards WHERE id IN (${placeholders})`)
+            .bind(...cardIds).all();
+          
+          for (const card of cards.results) {
+            if (card.multiplier) fakeMultiplier *= card.multiplier;
+            // 如果是 1.05 这种形式，我们将其视为复合系数 (Multiplier)
+            // 如果是 0.05 这种形式，通常代表 Additive，但根据你的描述，我们采用复合乘法
+            if (card.exponent_bonus) fakeExponentMultiplier *= card.exponent_bonus;
+          }
+        }
+      }
+
+      // 3. Final Calculation
+      const finalBase = parseFloat(data.baseScore) * (parseFloat(data.multiplier) || 1.0) * fakeMultiplier;
+      const finalExponent = baseTeamExponent * fakeExponentMultiplier;
+      const totalScore = Math.pow(finalBase, finalExponent);
       
       await env.DB.prepare(`
         INSERT INTO ngu4th_rounds (match_id, player_id, team, round_number, base_score, multiplier, exponent, total_score, round_type, tarot_id, poker_hand, active_fake_cards, game_id)
@@ -42,7 +69,7 @@ export const onRequest: PagesFunction<{
       `).bind(
         matchId, playerId, team, 
         roundType === 'red_pick' ? 1 : 2, 
-        data.baseScore, data.multiplier, 1.0, 
+        data.baseScore, (parseFloat(data.multiplier) || 1.0) * fakeMultiplier, finalExponent, 
         totalScore, roundType, data.tarotId || null, data.hand, data.fakeCards || null,
         match.game_id
       ).run();
@@ -51,8 +78,11 @@ export const onRequest: PagesFunction<{
       await checkAchievements(env.DB, playerId, { 
         type: 'score', 
         value: totalScore,
+        baseScore: parseFloat(data.baseScore),
         pokerHand: data.hand,
-        fakeCards: data.fakeCards
+        fakeCards: data.fakeCards,
+        jokerUsed: !!(data.multiplier && parseFloat(data.multiplier) !== 1.0),
+        tarotId: data.tarotId
       });
       
       return totalScore;
