@@ -5,6 +5,8 @@ export interface Achievement {
   id: number;
   name: string;
   condition: string;
+  scene: string;
+  earned_at?: string;
 }
 
 export const AchievementToast = ({ achievement, onClose }: { achievement: Achievement, onClose: () => void }) => {

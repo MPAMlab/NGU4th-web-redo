@@ -7,7 +7,7 @@ import { RegistrationPage } from './Registration';
 import { QRCodeSVG } from 'qrcode.react';
 import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
 
-interface Achievement {
+export interface Achievement {
   id: number;
   name: string;
   condition: string;
