@@ -35,3 +35,45 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* react-day-picker v9 adjustments */
+.rdp-month_grid {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rdp-weekdays {
+  display: flex;
+}
+
+.rdp-weekday {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rdp-week {
+  display: flex;
+  width: 100%;
+}
+
+.rdp-day {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.rdp-day_button {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+}
