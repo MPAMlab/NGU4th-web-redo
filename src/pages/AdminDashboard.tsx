@@ -3,8 +3,7 @@ import {
   Users, Trophy, Swords, Zap, Settings, Info, Save, Trash2, ArrowUp, ArrowDown, 
   RotateCcw, Plus, Edit, X, LayoutDashboard, Database, Activity, Search, Award, ChevronLeft, PlusCircle, Filter, BookOpen, Star, Eye, EyeOff, Check, Play, Archive, Globe, FileText, QrCode
 } from 'lucide-react';
-import { DatePicker } from '@/components/ui/date-picker';
-import { TimePicker } from '@/components/ui/time-picker';
+import { UnifiedDateTimePicker } from '@/components/ui/unified-date-time-picker';
 import { parse, format } from 'date-fns';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -389,22 +388,15 @@ export const AdminDashboard = () => {
                               <input name="short_desc" defaultValue={editingMinigame.short_desc} required placeholder="一句话简介" className={inputClass} />
                            </div>
                            <textarea name="detailed_desc" defaultValue={editingMinigame.detailed_desc} placeholder="详细规则说明..." className={inputClass + " h-24 resize-none"} />
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                              <div className="space-y-1">
-                                 <label className="text-[8px] font-black uppercase text-slate-400">开始日期 START DATE</label>
-                                 <DatePicker 
-                                    date={editingMinigame.start_date ? parse(editingMinigame.start_date, 'yyyy-MM-dd', new Date()) : undefined} 
-                                    setDate={(d) => setEditingMinigame({ ...editingMinigame, start_date: d ? format(d, 'yyyy-MM-dd') : '' })} 
-                                 />
-                              </div>
-                              <div className="space-y-1">
-                                 <label className="text-[8px] font-black uppercase text-slate-400">开始时间 START TIME</label>
-                                 <TimePicker 
-                                    value={editingMinigame.start_time || "12:00"} 
-                                    onChange={(t) => setEditingMinigame({ ...editingMinigame, start_time: t })} 
-                                 />
-                              </div>
-                           </div>
+                           
+                           <UnifiedDateTimePicker 
+                              date={editingMinigame.start_date ? parse(editingMinigame.start_date, 'yyyy-MM-dd', new Date()) : undefined}
+                              setDate={(d) => setEditingMinigame({ ...editingMinigame, start_date: d ? format(d, 'yyyy-MM-dd') : '' })}
+                              time={editingMinigame.start_time || "12:00"}
+                              setTime={(t) => setEditingMinigame({ ...editingMinigame, start_time: t })}
+                              label="开始时间 / START TIME"
+                           />
+
                            <div className="space-y-1"><label className="text-[8px] font-black uppercase text-slate-400">人数限制</label><input name="max_players" type="number" defaultValue={editingMinigame.max_players || 8} className={inputClass} /></div>
                            <div className="grid grid-cols-2 gap-2">
                               <div className="space-y-1"><label className="text-[8px] font-black uppercase text-slate-400">奖励假卡</label>
