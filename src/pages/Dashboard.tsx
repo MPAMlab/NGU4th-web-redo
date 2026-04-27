@@ -223,8 +223,51 @@ export const DashboardPage = ({ user, achievements, activeGame }: { user: User, 
 
         {activeTab === 'challenges' && (
           <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-             <div className="flex items-center gap-4 px-2"><div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-100"><Zap size={24} fill="currentColor" /></div><div><h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">支线小游戏挑战</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Minigame Roster</p></div></div>
-             <div className="space-y-4">{minigames.map(g => (<div key={g.id} className="bg-white rounded-[2.5rem] border-2 border-slate-100 shadow-xl overflow-hidden group hover:border-purple-200 transition-all p-8 flex flex-col md:flex-row justify-between items-center gap-8"><div className="space-y-3 flex-1"><div className="flex items-center gap-3"><Badge variant={g.status === 'recruiting' ? 'default' : 'secondary'} className={g.status === 'recruiting' ? 'bg-green-600 text-white' : 'bg-orange-600 text-white'}>{g.status === 'recruiting' ? '招募中' : '进行中'}</Badge><h3 className="font-black text-2xl uppercase tracking-tighter text-slate-900">{g.title}</h3></div><p className="text-sm font-bold text-slate-400 leading-relaxed italic border-l-4 border-purple-500 pl-4">{g.short_desc}</p></div><div className="flex items-center gap-8"><div className="text-right"><p className="text-[9px] font-black text-slate-400 uppercase">Reward</p><p className="text-xs font-black text-purple-600 uppercase italic">{g.fake_card_name}</p></div><button disabled={loading || (g.status !== 'recruiting' && !g.is_joined)} onClick={() => handleJoin(g.id, g.is_joined === 1)} className={`px-8 py-4 rounded-2xl font-black text-[10px] uppercase shadow-2xl transition-all ${g.is_joined ? 'bg-slate-900 text-white' : 'bg-indigo-600 text-white'}`}>{g.is_joined ? '取消报名' : '立即报名'}</button></div></div>))}</div>
+             <div className="flex items-center gap-4 px-2">
+                <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-100">
+                   <Zap size={24} fill="currentColor" />
+                </div>
+                <div>
+                   <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">支线挑战 HUB</h2>
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Minigame Roster</p>
+                </div>
+             </div>
+             <div className="grid grid-cols-1 gap-4">
+                {minigames.filter(m => m.status !== 'finished').map(g => (
+                   <div key={g.id} className="bg-white rounded-[2.5rem] border-2 border-slate-100 shadow-xl overflow-hidden group hover:border-purple-200 transition-all p-8 flex flex-col md:flex-row justify-between items-center gap-8">
+                      <div className="space-y-3 flex-1">
+                         <div className="flex items-center gap-3">
+                            <Badge variant={g.status === 'recruiting' ? 'default' : 'outline'} className={g.status === 'recruiting' ? 'bg-green-600 text-white border-transparent' : 'text-orange-500 border-orange-200'}>
+                               {g.status === 'recruiting' ? '招募中 RECRUITING' : '进行中 ACTIVE'}
+                            </Badge>
+                            <h3 className="font-black text-2xl uppercase tracking-tighter text-slate-900">{g.title}</h3>
+                         </div>
+                         <p className="text-sm font-bold text-slate-400 leading-relaxed italic border-l-4 border-purple-500 pl-4">{g.short_desc}</p>
+                         <div className="flex gap-6 mt-4">
+                            <div className="flex flex-col"><span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">剩余席位</span><span className="text-lg font-black italic tabular-nums">{g.participant_count} / {g.max_players}</span></div>
+                            <div className="flex flex-col"><span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">优胜奖励</span><span className="text-lg font-black italic text-purple-600 uppercase">{g.fake_card_name || '???'}</span></div>
+                         </div>
+                      </div>
+                      <button 
+                         disabled={loading || (g.status !== 'recruiting' && !g.is_joined) || (g.participant_count >= g.max_players && !g.is_joined)} 
+                         onClick={() => handleJoin(g.id, g.is_joined === 1)} 
+                         className={`px-10 py-5 rounded-[1.5rem] font-black text-xs uppercase shadow-2xl transition-all active:scale-95 ${
+                            g.is_joined 
+                               ? 'bg-slate-900 text-white border-b-4 border-slate-700' 
+                               : 'bg-indigo-600 text-white border-b-4 border-indigo-800 hover:bg-indigo-500'
+                         } disabled:opacity-30 disabled:grayscale`}
+                      >
+                         {loading ? 'SYNCING...' : g.is_joined ? '取消报名 LEAVE' : g.participant_count >= g.max_players ? '名额已满 FULL' : '立即报名 JOIN'}
+                      </button>
+                   </div>
+                ))}
+                {minigames.filter(m => m.status !== 'finished').length === 0 && (
+                   <div className="bg-slate-100/50 rounded-[2.5rem] border-2 border-dashed border-slate-200 py-20 text-center space-y-4">
+                      <HelpCircle size={48} className="mx-auto text-slate-300" />
+                      <p className="font-black text-slate-400 uppercase italic tracking-widest">目前没有进行中的挑战</p>
+                   </div>
+                )}
+             </div>
           </div>
         )}
 

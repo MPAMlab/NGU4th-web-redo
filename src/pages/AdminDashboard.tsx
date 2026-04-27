@@ -99,7 +99,7 @@ const HAND_TYPES_LIST = [
 ];
 
 export const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState<'members' | 'achievements' | 'templates' | 'matches' | 'live' | 'library' | 'games'>('members');
+  const [activeTab, setActiveTab] = useState<'members' | 'achievements' | 'templates' | 'matches' | 'live' | 'library' | 'games' | 'minigames'>('members');
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   // ... rest of state
   const [members, setMembers] = useState<Member[]>([]);
@@ -109,12 +109,15 @@ export const AdminDashboard = () => {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [systemState, setSystemState] = useState<any>({});
   const [games, setGames] = useState<Game[]>([]);
+  const [minigames, setMinigames] = useState<any[]>([]);
+  const [minigameParticipants, setMinigameParticipants] = useState<any[]>([]);
   
   const [applyRedJoker, setApplyRedJoker] = useState(true);
   const [applyBlueJoker, setApplyBlueJoker] = useState(true);
   const [editingCard, setEditingCard] = useState<Partial<Card> | null>(null);
   const [editingTplId, setEditingTplId] = useState<number | null>(null);
   const [editTplForm, setEditTplForm] = useState<Partial<Achievement>>({});
+  const [editingMinigame, setEditingMinigame] = useState<any | null>(null);
 
   const [libraryFilter, setLibraryFilter] = useState<'all' | 'joker' | 'tarot' | 'fake'>('all');
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
@@ -123,15 +126,16 @@ export const AdminDashboard = () => {
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [achRes, regRes, matchRes, cardRes, sysRes] = await Promise.all([
+      const [achRes, regRes, matchRes, cardRes, sysRes, miniRes] = await Promise.all([
         fetch('/api/admin/achievements'),
         fetch('/api/admin/registration'),
         fetch('/api/admin/matches'),
         fetch('/api/admin/cards'),
-        fetch('/api/admin/system')
+        fetch('/api/admin/system'),
+        fetch('/api/admin/minigames')
       ]);
-      const [achData, regData, matchData, cardData, sysData] = await Promise.all([
-        achRes.json(), regRes.json(), matchRes.json(), cardRes.json(), sysRes.json()
+      const [achData, regData, matchData, cardData, sysData, miniData] = await Promise.all([
+        achRes.json(), regRes.json(), matchRes.json(), cardRes.json(), sysRes.json(), miniRes.json()
       ]);
 
       setAchievements(achData.templates);
@@ -146,6 +150,8 @@ export const AdminDashboard = () => {
       setInventory(cardData.inventory);
       setSystemState(sysData.config);
       setGames(sysData.games);
+      setMinigames(miniData.games);
+      setMinigameParticipants(miniData.participants);
     } catch (err: any) {
       console.error(err);
     } finally {
@@ -156,6 +162,15 @@ export const AdminDashboard = () => {
   useEffect(() => { fetchData(); }, []);
 
   const switchTab = (tab: any) => { setActiveTab(tab); fetchData(true); };
+
+  const handleMinigameAction = async (action: string, payload: any) => {
+    const res = await fetch('/api/admin/minigames', { 
+       method: 'POST', 
+       headers: { 'Content-Type': 'application/json' }, 
+       body: JSON.stringify({ action, ...payload }) 
+    });
+    if (res.ok) { setEditingMinigame(null); fetchData(true); }
+  };
 
   const handleAchievementAction = async (action: string, payload: any) => {
     await fetch('/api/admin/achievements', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ...payload }) });
@@ -271,12 +286,126 @@ export const AdminDashboard = () => {
       </header>
 
       <nav className="flex gap-1 bg-slate-200/50 p-1 rounded-xl w-fit border border-slate-200">
-        {(['members', 'achievements', 'templates', 'matches', 'live', 'library', 'games'] as const).map(tab => (
+        {(['members', 'achievements', 'templates', 'matches', 'live', 'library', 'minigames', 'games'] as const).map(tab => (
           <button key={tab} onClick={() => switchTab(tab)} className={`px-4 py-1.5 rounded-lg font-black transition-all whitespace-nowrap uppercase tracking-tighter text-[9px] ${activeTab === tab ? 'bg-white shadow-sm text-indigo-600 border border-indigo-100' : 'text-slate-500 hover:text-slate-800'}`}>
-            {tab === 'members' ? '选手' : tab === 'achievements' ? '发放' : tab === 'templates' ? '成就库' : tab === 'matches' ? '赛程' : tab === 'live' ? '计分' : tab === 'library' ? '牌库' : '全局管理'}
+            {tab === 'members' ? '选手' : tab === 'achievements' ? '发放' : tab === 'templates' ? '成就库' : tab === 'matches' ? '赛程' : tab === 'live' ? '计分' : tab === 'library' ? '牌库' : tab === 'minigames' ? '小游戏' : '全局管理'}
           </button>
         ))}
       </nav>
+
+      {/* Tab: Minigames Management */}
+      {activeTab === 'minigames' && (
+         <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center">
+               <div className="flex flex-col"><h3 className="font-black italic uppercase text-[10px] tracking-widest text-slate-400">Minigame Coordinator</h3><p className="text-[11px] font-bold text-slate-800">小游戏发布与胜场结算</p></div>
+               <button onClick={()=>setEditingMinigame({ status: 'recruiting', max_players: 8 })} className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-black uppercase text-[10px] italic shadow-lg hover:scale-105 transition-all flex items-center gap-2"><Plus size={14}/> 发布新挑战 NEW EVENT</button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+               {minigames.map(g => (
+                  <div key={g.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                     <div className={`p-4 ${g.status === 'active' ? 'bg-indigo-600' : g.status === 'finished' ? 'bg-slate-900' : 'bg-slate-100'} text-white transition-colors`}>
+                        <div className="flex justify-between items-start mb-2">
+                           <Badge variant="outline" className="border-white/20 text-white">{g.status}</Badge>
+                           <span className="text-[9px] font-black opacity-40 uppercase">{g.start_date} {g.start_time}</span>
+                        </div>
+                        <h4 className={`text-lg font-black italic uppercase leading-tight ${g.status === 'recruiting' ? 'text-slate-900' : 'text-white'}`}>{g.title}</h4>
+                     </div>
+                     <div className="p-4 flex-1 space-y-4">
+                        <p className="text-[10px] font-bold text-slate-400 line-clamp-2 italic">{g.short_desc}</p>
+                        <div className="flex items-center gap-4 border-y py-3 border-slate-50">
+                           <div className="flex-1"><p className="text-[8px] font-black uppercase text-slate-400 mb-1 tracking-widest">Participants</p><p className="font-black text-xs italic">{g.participant_count} / {g.max_players}</p></div>
+                           <div className="flex-1"><p className="text-[8px] font-black uppercase text-slate-400 mb-1 tracking-widest">Reward Card</p><p className="font-black text-xs italic text-emerald-600">{g.fake_card_name || 'None'}</p></div>
+                        </div>
+                        {g.status === 'finished' && (
+                           <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100 flex items-center gap-3">
+                              <Trophy size={16} className="text-indigo-600" />
+                              <div className="flex-1"><p className="text-[8px] font-black uppercase text-indigo-400">Winner</p><p className="font-black text-xs uppercase text-indigo-900">{g.winner_name || 'Undisclosed'}</p></div>
+                           </div>
+                        )}
+                     </div>
+                     <div className="p-4 bg-slate-50 border-t flex gap-2">
+                        {g.status === 'recruiting' && <button onClick={()=>handleMinigameAction('start', { id: g.id })} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-black uppercase text-[9px] italic shadow-md">Start Recruiting</button>}
+                        {g.status === 'active' && <button onClick={()=>setEditingMinigame({...g, showFinish: true})} className="flex-1 bg-emerald-600 text-white py-2 rounded-lg font-black uppercase text-[9px] italic shadow-md">Complete & Reward</button>}
+                        <button onClick={()=>setEditingMinigame(g)} className="p-2 text-slate-400 hover:text-indigo-600"><Edit size={14}/></button>
+                        <button onClick={()=>{if(confirm('Delete?')) handleMinigameAction('delete', { id: g.id })}} className="p-2 text-slate-400 hover:text-red-600"><Trash2 size={14}/></button>
+                     </div>
+                  </div>
+               ))}
+            </div>
+
+            {editingMinigame && (
+               <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-6 z-50">
+                  <div className="bg-white p-8 rounded-3xl border border-indigo-600 shadow-2xl max-w-lg w-full space-y-6 animate-in zoom-in-95 max-h-[90vh] overflow-auto">
+                     <h3 className="font-black italic uppercase text-[10px] tracking-[0.2em] text-slate-400">
+                        {editingMinigame.showFinish ? "SELECT CHAMPION & FINALIZE" : (editingMinigame.id ? "MODIFY MINIGAME" : "CREATE NEW CHALLENGE")}
+                     </h3>
+                     
+                     {editingMinigame.showFinish ? (
+                        <div className="space-y-6">
+                           <div className="space-y-2">
+                              <label className="text-[8px] font-black uppercase text-slate-400">Choose Winner from Participants</label>
+                              <div className="grid grid-cols-1 gap-2">
+                                 {minigameParticipants.filter(p => p.minigame_id === editingMinigame.id).map(p => (
+                                    <button key={p.user_id} onClick={()=>handleMinigameAction('finish', { id: editingMinigame.id, winner_id: p.user_id })} className="flex items-center justify-between p-4 bg-slate-50 border-2 border-transparent hover:border-indigo-600 rounded-2xl group transition-all">
+                                       <div className="flex flex-col items-start"><span className="font-black text-xs uppercase">{p.username}</span><Badge variant={p.team === 'red' ? 'default' : 'secondary'}>{p.team}</Badge></div>
+                                       <Trophy size={16} className="text-slate-200 group-hover:text-indigo-600" />
+                                    </button>
+                                 ))}
+                                 {minigameParticipants.filter(p => p.minigame_id === editingMinigame.id).length === 0 && (
+                                    <p className="text-center py-8 text-xs font-bold text-slate-300 italic">No one joined this event.</p>
+                                 )}
+                                 <button onClick={()=>handleMinigameAction('finish', { id: editingMinigame.id, winner_id: null })} className="w-full py-3 text-[9px] font-black uppercase text-slate-400 border border-dashed rounded-xl mt-4">Close without winner</button>
+                              </div>
+                           </div>
+                           <button onClick={()=>setEditingMinigame(null)} className="w-full py-3 bg-slate-900 text-white rounded-xl font-black uppercase text-[9px]">Cancel</button>
+                        </div>
+                     ) : (
+                        <form onSubmit={(e)=>{
+                           e.preventDefault();
+                           const fd = new FormData(e.currentTarget);
+                           handleMinigameAction(editingMinigame.id ? 'update' : 'create', {
+                              id: editingMinigame.id,
+                              title: fd.get('title'),
+                              short_desc: fd.get('short_desc'),
+                              detailed_desc: fd.get('detailed_desc'),
+                              start_date: fd.get('start_date'),
+                              start_time: fd.get('start_time'),
+                              max_players: parseInt(fd.get('max_players') as string),
+                              fake_card_id: fd.get('fake_card_id') || null,
+                              achievement_id: fd.get('achievement_id') || null
+                           });
+                        }} className="space-y-4">
+                           <input name="title" defaultValue={editingMinigame.title} required placeholder="挑战名称 (e.g. 五星)" className={inputClass} />
+                           <input name="short_desc" defaultValue={editingMinigame.short_desc} required placeholder="一句话简介" className={inputClass} />
+                           <textarea name="detailed_desc" defaultValue={editingMinigame.detailed_desc} placeholder="详细规则说明..." className={inputClass + " h-24 resize-none"} />
+                           <div className="grid grid-cols-2 gap-2">
+                              <input name="start_date" type="date" defaultValue={editingMinigame.start_date} className={inputClass} />
+                              <input name="start_time" type="time" defaultValue={editingMinigame.start_time} className={inputClass} />
+                           </div>
+                           <div className="space-y-1"><label className="text-[8px] font-black uppercase text-slate-400">人数限制</label><input name="max_players" type="number" defaultValue={editingMinigame.max_players || 8} className={inputClass} /></div>
+                           <div className="grid grid-cols-2 gap-2">
+                              <div className="space-y-1"><label className="text-[8px] font-black uppercase text-slate-400">奖励假卡</label>
+                                 <select name="fake_card_id" defaultValue={editingMinigame.fake_card_id || ""} className={selectClass}>
+                                    <option value="">(None)</option>
+                                    {cardLibrary.filter(c => c.type === 'fake').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                 </select>
+                              </div>
+                              <div className="space-y-1"><label className="text-[8px] font-black uppercase text-slate-400">关联成就</label>
+                                 <select name="achievement_id" defaultValue={editingMinigame.achievement_id || ""} className={selectClass}>
+                                    <option value="">(None)</option>
+                                    {achievements.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                 </select>
+                              </div>
+                           </div>
+                           <div className="flex gap-2 pt-2"><button type="submit" className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-black uppercase text-[10px] shadow-lg">Save Event</button><button type="button" onClick={()=>setEditingMinigame(null)} className="flex-1 bg-slate-900 text-white py-3 rounded-xl font-black uppercase text-[10px]">Cancel</button></div>
+                        </form>
+                     )}
+                  </div>
+               </div>
+            )}
+         </div>
+      )}
 
       {/* Tab: Games & Global Settings */}
       {activeTab === 'games' && (
