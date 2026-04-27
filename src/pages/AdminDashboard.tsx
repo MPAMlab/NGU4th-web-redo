@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { 
   Users, Trophy, Swords, Zap, Settings, Info, Save, Trash2, ArrowUp, ArrowDown, 
-  RotateCcw, Plus, Edit, X, LayoutDashboard, Database, Activity, Search, Award, ChevronLeft, PlusCircle, Filter, BookOpen, Star, Eye, EyeOff, Check, Play, Archive, Calendar, Globe, FileText, QrCode
+  RotateCcw, Plus, Edit, X, LayoutDashboard, Database, Activity, Search, Award, ChevronLeft, PlusCircle, Filter, BookOpen, Star, Eye, EyeOff, Check, Play, Archive, Globe, FileText, QrCode
 } from 'lucide-react';
+import { DatePicker } from '@/components/ui/date-picker';
+import { TimePicker } from '@/components/ui/time-picker';
+import { parse, format } from 'date-fns';
 
 interface Achievement {
   id: number;
@@ -369,19 +372,34 @@ export const AdminDashboard = () => {
                               title: fd.get('title'),
                               short_desc: fd.get('short_desc'),
                               detailed_desc: fd.get('detailed_desc'),
-                              start_date: fd.get('start_date'),
-                              start_time: fd.get('start_time'),
+                              start_date: editingMinigame.start_date,
+                              start_time: editingMinigame.start_time,
                               max_players: parseInt(fd.get('max_players') as string),
                               fake_card_id: fd.get('fake_card_id') || null,
                               achievement_id: fd.get('achievement_id') || null
                            });
                         }} className="space-y-4">
-                           <input name="title" defaultValue={editingMinigame.title} required placeholder="挑战名称 (e.g. 五星)" className={inputClass} />
-                           <input name="short_desc" defaultValue={editingMinigame.short_desc} required placeholder="一句话简介" className={inputClass} />
+                           <div className="space-y-1">
+                              <label className="text-[8px] font-black uppercase text-slate-400">挑战名称 & 简介</label>
+                              <input name="title" defaultValue={editingMinigame.title} required placeholder="挑战名称 (e.g. 五星)" className={inputClass} />
+                              <input name="short_desc" defaultValue={editingMinigame.short_desc} required placeholder="一句话简介" className={inputClass} />
+                           </div>
                            <textarea name="detailed_desc" defaultValue={editingMinigame.detailed_desc} placeholder="详细规则说明..." className={inputClass + " h-24 resize-none"} />
-                           <div className="grid grid-cols-2 gap-2">
-                              <input name="start_date" type="date" defaultValue={editingMinigame.start_date} className={inputClass} />
-                              <input name="start_time" type="time" defaultValue={editingMinigame.start_time} className={inputClass} />
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                              <div className="space-y-1">
+                                 <label className="text-[8px] font-black uppercase text-slate-400">开始日期 START DATE</label>
+                                 <DatePicker 
+                                    date={editingMinigame.start_date ? parse(editingMinigame.start_date, 'yyyy-MM-dd', new Date()) : undefined} 
+                                    setDate={(d) => setEditingMinigame({ ...editingMinigame, start_date: d ? format(d, 'yyyy-MM-dd') : '' })} 
+                                 />
+                              </div>
+                              <div className="space-y-1">
+                                 <label className="text-[8px] font-black uppercase text-slate-400">开始时间 START TIME</label>
+                                 <TimePicker 
+                                    value={editingMinigame.start_time || "12:00"} 
+                                    onChange={(t) => setEditingMinigame({ ...editingMinigame, start_time: t })} 
+                                 />
+                              </div>
                            </div>
                            <div className="space-y-1"><label className="text-[8px] font-black uppercase text-slate-400">人数限制</label><input name="max_players" type="number" defaultValue={editingMinigame.max_players || 8} className={inputClass} /></div>
                            <div className="grid grid-cols-2 gap-2">
