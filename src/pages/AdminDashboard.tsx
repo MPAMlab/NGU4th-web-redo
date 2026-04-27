@@ -6,6 +6,10 @@ import {
 import { DatePicker } from '@/components/ui/date-picker';
 import { TimePicker } from '@/components/ui/time-picker';
 import { parse, format } from 'date-fns';
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { Clock2Icon } from "lucide-react";
 
 interface Achievement {
   id: number;

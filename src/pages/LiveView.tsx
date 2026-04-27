@@ -86,8 +86,8 @@ export const LiveView = () => {
         <h2 className="text-3xl font-black uppercase tracking-[0.4em] text-neutral-500 italic">Phase 2 核心解锁进度</h2>
         <div className="w-full bg-neutral-900 h-32 rounded-[2.5rem] border-4 border-neutral-800 p-3 relative overflow-hidden shadow-inner">
           <div 
-            className="h-full bg-gradient-to-r from-red-600 via-purple-600 to-blue-600 rounded-[1.5rem] transition-all duration-[2000ms] ease-out shadow-[0_0_80px_rgba(147,51,234,0.6)] relative"
-            style={{ width: `${progressPercent}%` }}
+            className="h-full bg-gradient-to-r from-red-600 via-purple-600 to-blue-600 rounded-[1.5rem] transition-all ease-out shadow-[0_0_80px_rgba(147,51,234,0.6)] relative"
+            style={{ width: `${progressPercent}%`, transitionDuration: '2000ms' }}
           >
              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-30"></div>
           </div>
