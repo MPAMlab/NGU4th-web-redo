@@ -460,10 +460,27 @@ export const AdminDashboard = () => {
            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
               <div className="lg:col-span-1 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                  <h3 className="font-black italic uppercase text-[10px] tracking-widest text-slate-400 flex items-center gap-2"><PlusCircle size={12}/> 开启新一轮游戏</h3>
-                 <form onSubmit={async (e)=>{e.preventDefault(); const name = new FormData(e.currentTarget).get('name'); await fetch('/api/admin/system', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action: 'create_game', name }) }); fetchData(true); (e.target as any).reset();}} className="space-y-3">
+                 <p className="text-[9px] font-bold text-slate-400 leading-tight">警告：开启新一轮将强制存档当前活动，并重置所有选手的报名状态、分队和出场顺序。</p>
+                 <form onSubmit={async (e)=>{e.preventDefault(); if(!confirm('确定开启新轮次？所有选手需重新报名，比赛列表将清空。')) return; const name = new FormData(e.currentTarget).get('name'); await fetch('/api/admin/system', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action: 'create_game', name }) }); fetchData(true); (e.target as any).reset();}} className="space-y-3">
                     <input name="name" required placeholder="游戏名称 (e.g. Phase 2)" className={inputClass} />
                     <button type="submit" className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-black uppercase text-[9px] shadow-lg italic">ARCHIVE & CREATE</button>
                  </form>
+
+                 <div className="pt-4 border-t border-slate-100">
+                    <h3 className="font-black italic uppercase text-[10px] tracking-widest text-red-500 flex items-center gap-2 mb-3"><RotateCcw size={12}/> 危险区域 DANGER</h3>
+                    <button 
+                       onClick={async () => {
+                          if(confirm('警告：这将删除所有玩家的非基础成就记录（保留引继和报名礼包）。此操作不可逆，确定继续？')) {
+                             await fetch('/api/admin/system', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action: 'reset_all_achievements' }) });
+                             fetchData(true);
+                             alert('成就数据已清理');
+                          }
+                       }}
+                       className="w-full py-2 border-2 border-red-100 text-red-500 rounded-xl font-black uppercase text-[8px] hover:bg-red-500 hover:text-white transition-all"
+                    >
+                       重置全服成就 (保留特殊项)
+                    </button>
+                 </div>
               </div>
               <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                  <div className="bg-slate-50 p-3 border-b font-black text-[9px] uppercase tracking-widest text-slate-400">Game Archive Records</div>
