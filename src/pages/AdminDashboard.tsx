@@ -394,7 +394,7 @@ export const AdminDashboard = () => {
                               setDate={(d) => setEditingMinigame({ ...editingMinigame, start_date: d ? format(d, 'yyyy-MM-dd') : '' })}
                               time={editingMinigame.start_time || "12:00"}
                               setTime={(t) => setEditingMinigame({ ...editingMinigame, start_time: t })}
-                              label="开始时间 / START TIME"
+                              placeholder="开始时间 / START TIME"
                            />
 
                            <div className="space-y-1"><label className="text-[8px] font-black uppercase text-slate-400">人数限制</label><input name="max_players" type="number" defaultValue={editingMinigame.max_players || 8} className={inputClass} /></div>
