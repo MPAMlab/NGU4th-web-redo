@@ -140,26 +140,47 @@ export const AdminDashboard = () => {
         fetch('/api/admin/system'),
         fetch('/api/admin/minigames')
       ]);
+
+      // Check for any non-OK responses
+      const resources = [
+        { name: 'Achievements', res: achRes },
+        { name: 'Registration', res: regRes },
+        { name: 'Matches', res: matchRes },
+        { name: 'Cards', res: cardRes },
+        { name: 'System', res: sysRes },
+        { name: 'Minigames', res: miniRes }
+      ];
+
+      for (const r of resources) {
+        if (!r.res.ok) {
+           const errData = await r.res.json().catch(() => ({}));
+           throw new Error(`[${r.name}] ${errData.error || 'Server Error'} ${errData.message || ''}`);
+        }
+      }
+
       const [achData, regData, matchData, cardData, sysData, miniData] = await Promise.all([
         achRes.json(), regRes.json(), matchRes.json(), cardRes.json(), sysRes.json(), miniRes.json()
       ]);
 
-      setAchievements(achData.templates);
-      setUserAchievements(achData.userAchievements);
-      const enrichedMembers = (regData as Member[]).map(m => {
-         const joker = (cardData.library as Card[]).find(c => c.id === m.joker_card_id);
+      setAchievements(achData.templates || []);
+      setUserAchievements(achData.userAchievements || []);
+      
+      const library = cardData.library || [];
+      const enrichedMembers = (regData as Member[] || []).map(m => {
+         const joker = library.find((c: any) => c.id === m.joker_card_id);
          return { ...m, joker_name: joker?.name, joker_description: joker?.description, joker_multiplier: joker?.multiplier, joker_is_variable: joker?.is_variable };
       });
       setMembers(enrichedMembers.sort((a, b) => a.team_order - b.team_order));
-      setMatches(matchData);
-      setCardLibrary(cardData.library);
-      setInventory(cardData.inventory);
-      setSystemState(sysData.config);
-      setGames(sysData.games);
-      setMinigames(miniData.games);
-      setMinigameParticipants(miniData.participants);
+      setMatches(matchData || []);
+      setCardLibrary(library);
+      setInventory(cardData.inventory || []);
+      setSystemState(sysData.config || {});
+      setGames(sysData.games || []);
+      setMinigames(miniData.games || []);
+      setMinigameParticipants(miniData.participants || []);
     } catch (err: any) {
       console.error(err);
+      alert(err.message);
     } finally {
       if (!silent) setLoading(false);
     }

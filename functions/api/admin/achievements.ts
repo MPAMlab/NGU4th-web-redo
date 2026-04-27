@@ -1,94 +1,84 @@
 export const onRequest: PagesFunction<{
   DB: D1Database;
 }> = async ({ request, env }) => {
-  const cookieHeader = request.headers.get("Cookie") || "";
-  const match = cookieHeader.match(/auth_token=([^;]+)/);
-  if (!match) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 401, 
-      headers: { "Content-Type": "application/json" } 
-    });
-  }
-
-  const idToken = match[1];
-  let adminId: string;
   try {
-    const payloadPart = idToken.split(".")[1];
-    if (!payloadPart) throw new Error("Invalid JWT format");
-    // Handle base64url by replacing chars
-    const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
-    const payload = JSON.parse(atob(base64));
-    adminId = payload.sub;
-  } catch (e: any) {
-    return new Response(JSON.stringify({ error: "Invalid token" }), { 
-      status: 401, 
-      headers: { "Content-Type": "application/json" } 
-    });
-  }
-
-  // Verify admin role from D1
-  const adminUser: any = await env.DB.prepare("SELECT role FROM ngu4th_members WHERE kinde_id = ?")
-    .bind(adminId).first();
-  if (adminUser?.role !== 'admin') {
-    return new Response(JSON.stringify({ error: "Forbidden" }), { 
-      status: 403, 
-      headers: { "Content-Type": "application/json" } 
-    });
-  }
-
-  if (request.method === "GET") {
-    const templates = await env.DB.prepare("SELECT * FROM ngu4th_achievements ORDER BY id ASC").all();
-    const members = await env.DB.prepare("SELECT kinde_id, username, email FROM ngu4th_members").all();
-    const userAchievements = await env.DB.prepare(`
-        SELECT ua.id as instance_id, ua.kinde_id, ua.achievement_id, ua.earned_at
-        FROM ngu4th_user_achievements ua
-    `).all();
-
-    return new Response(JSON.stringify({ 
-      templates: templates.results, 
-      members: members.results,
-      userAchievements: userAchievements.results
-    }), {
-      headers: { "Content-Type": "application/json" }
-    });
-  }
-
-  if (request.method === "POST") {
-    const body = await request.json() as any;
-    const { action, targetKindeId, achievementId, instanceId, name, condition, scene, notes, trigger_type, trigger_value, is_hidden } = body;
-    
-    if (action === 'grant') {
-      await env.DB.prepare("INSERT OR IGNORE INTO ngu4th_user_achievements (kinde_id, achievement_id) VALUES (?, ?)")
-        .bind(targetKindeId, achievementId).run();
-    } else if (action === 'revoke') {
-      if (instanceId) {
-        await env.DB.prepare("DELETE FROM ngu4th_user_achievements WHERE id = ?").bind(instanceId).run();
-      } else {
-        await env.DB.prepare("DELETE FROM ngu4th_user_achievements WHERE kinde_id = ? AND achievement_id = ?")
-          .bind(targetKindeId, achievementId).run();
-      }
-    } else if (action === 'create_template') {
-      await env.DB.prepare("INSERT INTO ngu4th_achievements (name, condition, scene, notes, trigger_type, trigger_value, is_hidden) VALUES (?, ?, ?, ?, ?, ?, ?)")
-        .bind(name, condition, scene, notes, trigger_type, trigger_value, is_hidden).run();
-    } else if (action === 'update_template') {
-      await env.DB.prepare(`
-        UPDATE ngu4th_achievements 
-        SET name = ?, condition = ?, scene = ?, notes = ?, trigger_type = ?, trigger_value = ?, is_hidden = ? 
-        WHERE id = ?
-      `)
-        .bind(name, condition, scene, notes, trigger_type, trigger_value, is_hidden, achievementId).run();
-    } else if (action === 'delete_template') {
-      await env.DB.prepare("DELETE FROM ngu4th_user_achievements WHERE achievement_id = ?").bind(achievementId).run();
-      await env.DB.prepare("DELETE FROM ngu4th_achievements WHERE id = ?").bind(achievementId).run();
+    const cookieHeader = request.headers.get("Cookie") || "";
+    const match = cookieHeader.match(/auth_token=([^;]+)/);
+    if (!match) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { 
+        status: 401, 
+        headers: { "Content-Type": "application/json" } 
+      });
     }
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { "Content-Type": "application/json" }
-    });
-  }
+    const idToken = match[1];
+    const payloadPart = idToken.split(".")[1];
+    let base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4 !== 0) { base64 += '='; }
+    const payload = JSON.parse(atob(base64));
+    const userId = payload.sub;
 
-  return new Response(JSON.stringify({ error: "Method not allowed" }), { 
-    status: 405, 
-    headers: { "Content-Type": "application/json" } 
-  });
+    const user: any = await env.DB.prepare("SELECT role FROM ngu4th_members WHERE kinde_id = ?").bind(userId).first();
+    if (!user || user.role !== 'admin') {
+      return new Response(JSON.stringify({ error: "Forbidden: Admin access required" }), { status: 403, headers: { "Content-Type": "application/json" } });
+    }
+
+    if (request.method === "GET") {
+      const templates = await env.DB.prepare("SELECT * FROM ngu4th_achievements ORDER BY id ASC").all();
+      const members = await env.DB.prepare("SELECT kinde_id, username, email FROM ngu4th_members").all();
+      const userAchievements = await env.DB.prepare(`
+          SELECT ua.id as instance_id, ua.kinde_id, ua.achievement_id, ua.earned_at
+          FROM ngu4th_user_achievements ua
+      `).all();
+
+      return new Response(JSON.stringify({ 
+        templates: templates.results, 
+        members: members.results,
+        userAchievements: userAchievements.results
+      }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    if (request.method === "POST") {
+      const body = await request.json() as any;
+      const { action, targetKindeId, achievementId, instanceId, name, condition, scene, notes, trigger_type, trigger_value, is_hidden } = body;
+      
+      if (action === 'grant') {
+        await env.DB.prepare("INSERT OR IGNORE INTO ngu4th_user_achievements (kinde_id, achievement_id) VALUES (?, ?)")
+          .bind(targetKindeId, achievementId).run();
+      } else if (action === 'revoke') {
+        if (instanceId) {
+          await env.DB.prepare("DELETE FROM ngu4th_user_achievements WHERE id = ?").bind(instanceId).run();
+        } else {
+          await env.DB.prepare("DELETE FROM ngu4th_user_achievements WHERE kinde_id = ? AND achievement_id = ?")
+            .bind(targetKindeId, achievementId).run();
+        }
+      } else if (action === 'create_template') {
+        await env.DB.prepare("INSERT INTO ngu4th_achievements (name, condition, scene, notes, trigger_type, trigger_value, is_hidden) VALUES (?, ?, ?, ?, ?, ?, ?)")
+          .bind(name, condition, scene, notes, trigger_type, trigger_value, is_hidden).run();
+      } else if (action === 'update_template') {
+        await env.DB.prepare(`
+          UPDATE ngu4th_achievements 
+          SET name = ?, condition = ?, scene = ?, notes = ?, trigger_type = ?, trigger_value = ?, is_hidden = ? 
+          WHERE id = ?
+        `)
+          .bind(name, condition, scene, notes, trigger_type, trigger_value, is_hidden, achievementId).run();
+      } else if (action === 'delete_template') {
+        await env.DB.prepare("DELETE FROM ngu4th_user_achievements WHERE achievement_id = ?").bind(achievementId).run();
+        await env.DB.prepare("DELETE FROM ngu4th_achievements WHERE id = ?").bind(achievementId).run();
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    return new Response(JSON.stringify({ error: "Method not allowed" }), { 
+      status: 405, 
+      headers: { "Content-Type": "application/json" } 
+    });
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: "Server Error", message: e.message }), { status: 500, headers: { "Content-Type": "application/json" } });
+  }
 };
