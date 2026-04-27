@@ -339,13 +339,30 @@ export const AdminDashboard = () => {
                 <div className={`p-3 px-4 ${team === 'red' ? 'bg-red-600' : 'bg-blue-600'} text-white flex justify-between items-center`}><h3 className="font-black italic uppercase tracking-widest text-[10px]">{team} Team Sequence</h3><button onClick={()=>{fetch('/api/admin/cards',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'random_joker'})}).then(()=>fetchData(true))}} className="bg-white/10 hover:bg-white/20 p-1 px-2 rounded font-black text-[8px] uppercase border border-white/20">Shuffle Jokers</button></div>
                 <div className="p-2 space-y-1">
                   {members.filter(m => m.team === team && m.is_registered === 1).map((m, i) => (
-                    <div key={m.kinde_id} className="bg-slate-50 p-3 rounded-xl border border-transparent hover:border-indigo-100 hover:bg-white transition-all group flex items-center gap-3">
-                        <span className="text-lg font-black italic text-slate-200 tabular-nums">#{i + 1}</span>
-                        <div className="flex-1 font-black text-xs text-slate-800 uppercase truncate">{m.username}</div>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100">
-                          <button onClick={() => handleReorder(m.kinde_id, 'up')} className="bg-white p-1 rounded border border-slate-200 hover:bg-indigo-600 hover:text-white"><ArrowUp size={10} /></button>
-                          <button onClick={() => handleReorder(m.kinde_id, 'down')} className="bg-white p-1 rounded border border-slate-200 hover:bg-indigo-600 hover:text-white"><ArrowDown size={10} /></button>
-                          <button onClick={() => handleMemberAction(m.kinde_id, 'set_team', team === 'red' ? 'blue' : 'red')} className="bg-white px-2 rounded border border-orange-200 text-orange-600 font-black text-[8px] uppercase hover:bg-orange-500 hover:text-white">Swap</button>
+                    <div key={m.kinde_id} className="bg-slate-50 p-3 rounded-xl border border-transparent hover:border-indigo-100 hover:bg-white transition-all group flex flex-col gap-2">
+                        <div className="flex items-center gap-3">
+                            <span className="text-lg font-black italic text-slate-200 tabular-nums">#{i + 1}</span>
+                            <div className="flex-1 font-black text-xs text-slate-800 uppercase truncate">{m.username}</div>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100">
+                              <button onClick={() => handleReorder(m.kinde_id, 'up')} className="bg-white p-1 rounded border border-slate-200 hover:bg-indigo-600 hover:text-white"><ArrowUp size={10} /></button>
+                              <button onClick={() => handleReorder(m.kinde_id, 'down')} className="bg-white p-1 rounded border border-slate-200 hover:bg-indigo-600 hover:text-white"><ArrowDown size={10} /></button>
+                              <button onClick={() => handleMemberAction(m.kinde_id, 'set_team', team === 'red' ? 'blue' : 'red')} className="bg-white px-2 rounded border border-orange-200 text-orange-600 font-black text-[8px] uppercase hover:bg-orange-500 hover:text-white">Swap</button>
+                            </div>
+                        </div>
+                        
+                        {/* Joker Assignment Row */}
+                        <div className="flex items-center gap-2 pl-8">
+                           <Zap size={10} className={m.joker_card_id ? "text-amber-500" : "text-slate-300"} />
+                           <select 
+                              value={m.joker_card_id || ""} 
+                              onChange={(e) => handleMemberAction(m.kinde_id, 'set_joker', e.target.value === "" ? null : parseInt(e.target.value))}
+                              className="bg-transparent border-none text-[9px] font-bold text-slate-500 hover:text-indigo-600 outline-none cursor-pointer p-0"
+                           >
+                              <option value="">(No Joker Card)</option>
+                              {cardLibrary.filter(c => c.type === 'joker').map(j => (
+                                 <option key={j.id} value={j.id}>{j.name} (x{j.multiplier}{j.is_variable ? ' var' : ''})</option>
+                              ))}
+                           </select>
                         </div>
                     </div>
                   ))}
