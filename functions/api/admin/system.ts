@@ -3,14 +3,30 @@ export const onRequest: PagesFunction<{
 }> = async ({ request, env }) => {
   const cookieHeader = request.headers.get("Cookie") || "";
   const match = cookieHeader.match(/auth_token=([^;]+)/);
-  if (!match) return new Response("Unauthorized", { status: 401 });
+  if (!match) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
 
-  // Basic admin check via JWT
+  const idToken = match[1];
+  let userId: string;
+  
   try {
-    const payload = JSON.parse(atob(match[1].split(".")[1].replace(/-/g, '+').replace(/_/g, '/')));
-    if (payload.role !== 'admin') return new Response("Forbidden", { status: 403 });
+    const payloadPart = idToken.split(".")[1];
+    const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(base64));
+    userId = payload.sub; // This is the kinde_id
   } catch (e) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers: { "Content-Type": "application/json" } });
+  }
+
+  // 🛡️ CRITICAL: Check role from our DB, not the JWT
+  const user: any = await env.DB.prepare("SELECT role FROM ngu4th_members WHERE kinde_id = ?")
+    .bind(userId)
+    .first();
+
+  if (!user || user.role !== 'admin') {
+    return new Response(JSON.stringify({ error: "Forbidden: Admin access required" }), { 
+      status: 403, 
+      headers: { "Content-Type": "application/json" } 
+    });
   }
 
   if (request.method === "GET") {
@@ -31,32 +47,16 @@ export const onRequest: PagesFunction<{
     const body = await request.json() as any;
     const { action, key, value, gameId, name, settings } = body;
 
-    // Standard KV update
     if (key && value !== undefined) {
       await env.DB.prepare("INSERT OR REPLACE INTO ngu4th_system_config (key, value) VALUES (?, ?)")
         .bind(key, value.toString()).run();
     }
 
-    // Advanced Actions
     if (action === 'create_game') {
-      // 1. Archive current active games
       await env.DB.prepare("UPDATE ngu4th_games SET status = 'archived' WHERE status = 'active'").run();
-      
-      // 2. Create new active game
-      await env.DB.prepare("INSERT INTO ngu4th_games (name, status) VALUES (?, 'active')")
-        .bind(name).run();
-
-      // 3. NUCLEAR RESET: Clear player participation for the new round
-      // We keep the accounts, but they must "re-register" for the new phase
-      await env.DB.prepare(`
-        UPDATE ngu4th_members 
-        SET is_registered = 0, team = NULL, team_order = 0, joker_card_id = NULL
-      `).run();
-
-      // 4. Clear all match schedules as players/teams are reset
+      await env.DB.prepare("INSERT INTO ngu4th_games (name, status) VALUES (?, 'active')").bind(name).run();
+      await env.DB.prepare("UPDATE ngu4th_members SET is_registered = 0, team = NULL, team_order = 0, joker_card_id = NULL").run();
       await env.DB.prepare("DELETE FROM ngu4th_matches").run();
-      
-      // 5. Reset active match pointer
       await env.DB.prepare("INSERT OR REPLACE INTO ngu4th_system_config (key, value) VALUES ('active_match_id', NULL)").run();
     }
 
@@ -73,9 +73,7 @@ export const onRequest: PagesFunction<{
       `).bind(location, description, show_rules, show_minigames, show_stamps, show_achievements, show_cards, gameId).run();
     }
 
-    // NEW: Nuclear Achievement Reset
     if (action === 'reset_all_achievements') {
-      // Delete all user achievements except 'registration' and 'legacy' types
       await env.DB.prepare(`
         DELETE FROM ngu4th_user_achievements 
         WHERE achievement_id IN (
@@ -85,8 +83,10 @@ export const onRequest: PagesFunction<{
       `).run();
     }
 
-    return new Response(JSON.stringify({ success: true }));
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { "Content-Type": "application/json" }
+    });
   }
 
-  return new Response("Method not allowed", { status: 405 });
+  return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
 };

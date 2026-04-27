@@ -3,7 +3,12 @@ export const onRequest: PagesFunction<{
 }> = async ({ request, env }) => {
   const cookieHeader = request.headers.get("Cookie") || "";
   const match = cookieHeader.match(/auth_token=([^;]+)/);
-  if (!match) return new Response("Missing auth_token cookie", { status: 401 });
+  if (!match) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
+      status: 401, 
+      headers: { "Content-Type": "application/json" } 
+    });
+  }
 
   const idToken = match[1];
   let adminId: string;
@@ -15,13 +20,21 @@ export const onRequest: PagesFunction<{
     const payload = JSON.parse(atob(base64));
     adminId = payload.sub;
   } catch (e: any) {
-    return new Response(`Invalid token: ${e.message}`, { status: 401 });
+    return new Response(JSON.stringify({ error: "Invalid token" }), { 
+      status: 401, 
+      headers: { "Content-Type": "application/json" } 
+    });
   }
 
-  // Verify admin role
+  // Verify admin role from D1
   const adminUser: any = await env.DB.prepare("SELECT role FROM ngu4th_members WHERE kinde_id = ?")
     .bind(adminId).first();
-  if (adminUser?.role !== 'admin') return new Response(`Forbidden: User role is ${adminUser?.role}`, { status: 403 });
+  if (adminUser?.role !== 'admin') {
+    return new Response(JSON.stringify({ error: "Forbidden" }), { 
+      status: 403, 
+      headers: { "Content-Type": "application/json" } 
+    });
+  }
 
   if (request.method === "GET") {
     const templates = await env.DB.prepare("SELECT * FROM ngu4th_achievements ORDER BY id ASC").all();
@@ -74,5 +87,8 @@ export const onRequest: PagesFunction<{
     });
   }
 
-  return new Response("Method not allowed", { status: 405 });
+  return new Response(JSON.stringify({ error: "Method not allowed" }), { 
+    status: 405, 
+    headers: { "Content-Type": "application/json" } 
+  });
 };

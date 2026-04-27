@@ -3,24 +3,38 @@ export const onRequest: PagesFunction<{
 }> = async ({ request, env }) => {
   const cookieHeader = request.headers.get("Cookie") || "";
   const match = cookieHeader.match(/auth_token=([^;]+)/);
-  if (!match) return new Response("Missing auth_token cookie", { status: 401 });
+  if (!match) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
+      status: 401, 
+      headers: { "Content-Type": "application/json" } 
+    });
+  }
 
   const idToken = match[1];
   let adminId: string;
   try {
     const payloadPart = idToken.split(".")[1];
     if (!payloadPart) throw new Error("Invalid JWT format");
+    // Handle base64url by replacing chars
     const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
     const payload = JSON.parse(atob(base64));
     adminId = payload.sub;
   } catch (e: any) {
-    return new Response(`Invalid token: ${e.message}`, { status: 401 });
+    return new Response(JSON.stringify({ error: "Invalid token" }), { 
+      status: 401, 
+      headers: { "Content-Type": "application/json" } 
+    });
   }
 
-  // Verify admin role
+  // Verify admin role from D1
   const adminUser: any = await env.DB.prepare("SELECT role FROM ngu4th_members WHERE kinde_id = ?")
     .bind(adminId).first();
-  if (adminUser?.role !== 'admin') return new Response(`Forbidden: User role is ${adminUser?.role}`, { status: 403 });
+  if (adminUser?.role !== 'admin') {
+    return new Response(JSON.stringify({ error: "Forbidden" }), { 
+      status: 403, 
+      headers: { "Content-Type": "application/json" } 
+    });
+  }
 
   if (request.method === "GET") {
     // Fetch card library
@@ -68,7 +82,12 @@ export const onRequest: PagesFunction<{
       const jokers: any = await env.DB.prepare("SELECT id FROM ngu4th_cards WHERE type = 'joker'").all();
       const users: any = await env.DB.prepare("SELECT kinde_id FROM ngu4th_members WHERE is_registered = 1").all();
       
-      if (jokers.results.length === 0 || users.results.length === 0) return new Response("No cards or users", { status: 400 });
+      if (jokers.results.length === 0 || users.results.length === 0) {
+        return new Response(JSON.stringify({ error: "No cards or users" }), { 
+          status: 400, 
+          headers: { "Content-Type": "application/json" } 
+        });
+      }
 
       // Clear existing Joker assignments
       await env.DB.prepare("UPDATE ngu4th_members SET joker_card_id = NULL WHERE is_registered = 1").run();
@@ -87,5 +106,8 @@ export const onRequest: PagesFunction<{
     });
   }
 
-  return new Response("Method not allowed", { status: 405 });
+  return new Response(JSON.stringify({ error: "Method not allowed" }), { 
+    status: 405, 
+    headers: { "Content-Type": "application/json" } 
+  });
 };
