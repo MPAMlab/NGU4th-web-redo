@@ -44,15 +44,15 @@ export const onRequest: PagesFunction<{
         });
       }
 
-      // Helper to calculate, insert and check achievements
+      // Helper to calculate and insert round data
       const commitRound = async (playerId: string, team: string, data: any) => {
-        // 1. Get Base settings from Active Game
+        // 1. Get Base Exponent from Active Game
         const activeGame: any = await env.DB.prepare("SELECT red_exponent, blue_exponent FROM ngu4th_games WHERE status = 'active'").first();
         const baseTeamExponent = team === 'red' ? (activeGame?.red_exponent || 1.0) : (activeGame?.blue_exponent || 1.0);
 
         // 2. Fetch all selected fake cards data
         let fakeMultiplier = 1.0;
-        let fakeExponentMultiplier = 1.0;
+        let fakeExponentProd = 1.0; // Use Product
         
         if (data.fakeCards) {
           const cardIds = data.fakeCards.split(',').filter((id: string) => id.trim() !== '');
@@ -63,15 +63,21 @@ export const onRequest: PagesFunction<{
             
             for (const card of cards.results) {
               if (card.multiplier) fakeMultiplier *= card.multiplier;
-              if (card.exponent_bonus) fakeExponentMultiplier *= card.exponent_bonus;
+              // Multiply exponents as per (base^a)^b = base^(a*b) logic
+              if (card.exponent_bonus) fakeExponentProd *= card.exponent_bonus; 
             }
           }
         }
 
-        // 3. Final Calculation
-        const finalBase = parseFloat(data.baseScore) * (parseFloat(data.multiplier) || 1.0) * fakeMultiplier;
-        const finalExponent = baseTeamExponent * fakeExponentMultiplier;
-        const totalScore = Math.pow(finalBase, finalExponent);
+        const jokerMultiplier = parseFloat(data.multiplier) || 1.0;
+        const totalMultiplier = jokerMultiplier * fakeMultiplier;
+        const baseScore = parseFloat(data.baseScore);
+        
+        // Final exponent for THIS round = Team Base * Card Bonuses
+        const finalRoundExponent = baseTeamExponent * fakeExponentProd;
+
+        // Placeholder for achievement types (simplified calculation)
+        const totalScorePlaceholder = Math.pow(baseScore, finalRoundExponent) * totalMultiplier; 
         
         await env.DB.prepare(`
           INSERT INTO ngu4th_rounds (match_id, player_id, team, round_number, base_score, multiplier, exponent, total_score, round_type, tarot_id, poker_hand, active_fake_cards, game_id)
@@ -79,23 +85,23 @@ export const onRequest: PagesFunction<{
         `).bind(
           matchId, playerId, team, 
           roundType === 'red_pick' ? 1 : 2, 
-          data.baseScore, (parseFloat(data.multiplier) || 1.0) * fakeMultiplier, finalExponent, 
-          totalScore, roundType, data.tarotId || null, data.hand, data.fakeCards || null,
+          baseScore, totalMultiplier, finalRoundExponent, 
+          totalScorePlaceholder, roundType, data.tarotId || null, data.hand, data.fakeCards || null,
           match.game_id
         ).run();
 
-        // HOOK: Check achievements for score
+        // HOOK: Check achievements
         await checkAchievements(env.DB, playerId, { 
           type: 'score', 
-          value: totalScore,
-          baseScore: parseFloat(data.baseScore),
+          value: totalScorePlaceholder,
+          baseScore: baseScore,
           pokerHand: data.hand,
           fakeCards: data.fakeCards,
           jokerUsed: !!(data.multiplier && parseFloat(data.multiplier) !== 1.0),
           tarotId: data.tarotId
         });
         
-        return totalScore;
+        return totalScorePlaceholder;
       };
 
       await commitRound(match.red_player_id, 'red', redData);

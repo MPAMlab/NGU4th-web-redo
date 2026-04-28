@@ -61,10 +61,28 @@ export async function checkAchievements(db: D1Database, kindeId: string, context
             if (context.type === 'score' && activeGame) {
                const team = user.team;
                if (team) {
-                  const exponent = team === 'red' ? (activeGame.red_exponent || 1) : (activeGame.blue_exponent || 1);
-                  const totalBase: any = await db.prepare("SELECT SUM(total_score) as total FROM ngu4th_rounds WHERE player_id = ? AND game_id = ?")
-                    .bind(kindeId, activeGame.id).first();
-                  const finalP = Math.pow(totalBase.total || 0, exponent);
+                  // New Formula: (Sum of Base ^ Product of Exp) * Product of Multipliers
+                  const agg: any = await db.prepare(`
+                    SELECT 
+                      SUM(base_score) as sumBase
+                    FROM ngu4th_rounds 
+                    WHERE player_id = ? AND game_id = ?
+                  `).bind(kindeId, activeGame.id).first();
+                  
+                  // For exponents and multipliers, we need to fetch all and multiply
+                  const data: any = await db.prepare(`
+                    SELECT exponent, multiplier FROM ngu4th_rounds 
+                    WHERE player_id = ? AND game_id = ?
+                  `).bind(kindeId, activeGame.id).all();
+                  
+                  let prodExp = 1.0;
+                  let prodMult = 1.0;
+                  (data.results || []).forEach((r: any) => {
+                    prodExp *= (r.exponent || 1.0);
+                    prodMult *= (r.multiplier || 1.0);
+                  });
+
+                  const finalP = Math.pow(agg.sumBase || 0, prodExp) * prodMult;
                   if (finalP >= parseFloat(tpl.trigger_value || '0')) shouldGrant = true;
                }
             }

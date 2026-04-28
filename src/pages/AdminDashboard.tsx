@@ -33,6 +33,8 @@ interface Game {
   show_stamps: number;
   show_achievements: number;
   show_cards: number;
+  red_exponent?: number;
+  blue_exponent?: number;
 }
 
 interface Member {
@@ -254,6 +256,8 @@ export const AdminDashboard = () => {
       show_stamps: fd.get('show_stamps') === 'on' ? 1 : 0,
       show_achievements: fd.get('show_achievements') === 'on' ? 1 : 0,
       show_cards: fd.get('show_cards') === 'on' ? 1 : 0,
+      red_exponent: parseFloat(fd.get('red_exponent') as string) || 1.0,
+      blue_exponent: parseFloat(fd.get('blue_exponent') as string) || 1.0,
     };
     await fetch('/api/admin/system', { 
        method: 'POST', 

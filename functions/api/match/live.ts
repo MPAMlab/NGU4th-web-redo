@@ -5,6 +5,8 @@ export const onRequest: PagesFunction<{
 
   const stream = new ReadableStream({
     async start(controller) {
+      const sendState = async () => {
+        try {
           // 1. Get active match ID from system_config
           const configRecord: any = await env.DB.prepare("SELECT value FROM ngu4th_system_config WHERE key = 'active_match_id'").first();
           const activeMatchId = configRecord?.value;
@@ -28,16 +30,32 @@ export const onRequest: PagesFunction<{
             `).bind(activeMatchId).first();
           }
 
-          // 4. Get team totals
-          const totals: any = await env.DB.prepare(`
-            SELECT team, SUM(total_score) as sum FROM ngu4th_rounds WHERE game_id = (SELECT id FROM ngu4th_games WHERE status = 'active') GROUP BY team
+          // 4. Get team totals using new formula: (Sum of Base ^ Product of Exp) * Product of Multipliers
+          const rawRounds: any = await env.DB.prepare(`
+            SELECT team, base_score, multiplier, exponent 
+            FROM ngu4th_rounds 
+            WHERE game_id = (SELECT id FROM ngu4th_games WHERE status = 'active')
           `).all();
           
-          const teamScores = { red: 0, blue: 0 };
-          totals.results.forEach((r: any) => {
-            if (r.team === 'red') teamScores.red = r.sum;
-            if (r.team === 'blue') teamScores.blue = r.sum;
+          const teamAggregates: any = {
+            red: { sumBase: 0, prodExp: 1.0, prodMult: 1.0, hasRounds: false },
+            blue: { sumBase: 0, prodExp: 1.0, prodMult: 1.0, hasRounds: false }
+          };
+
+          (rawRounds.results || []).forEach((r: any) => {
+            const team = r.team as 'red' | 'blue';
+            if (teamAggregates[team]) {
+              teamAggregates[team].sumBase += (r.base_score || 0);
+              teamAggregates[team].prodExp *= (r.exponent || 1.0);
+              teamAggregates[team].prodMult *= (r.multiplier || 1.0);
+              teamAggregates[team].hasRounds = true;
+            }
           });
+
+          const teamScores = {
+            red: Math.pow(teamAggregates.red.sumBase, teamAggregates.red.hasRounds ? teamAggregates.red.prodExp : teamExponents.red) * teamAggregates.red.prodMult,
+            blue: Math.pow(teamAggregates.blue.sumBase, teamAggregates.blue.hasRounds ? teamAggregates.blue.prodExp : teamExponents.blue) * teamAggregates.blue.prodMult
+          };
 
           // 5. Get recent rounds with Tarot names
           const recentRounds = await env.DB.prepare(`
@@ -67,11 +85,13 @@ export const onRequest: PagesFunction<{
 
       // Poll every 3 seconds
       const interval = setInterval(async () => {
-        await sendState();
+        try {
+          await sendState();
+        } catch (err) {
+          // If the stream is closed, this will error
+          clearInterval(interval);
+        }
       }, 3000);
-
-      // Clean up on close (note: may not always trigger in edge functions)
-      // but the stream will eventually time out
     },
     cancel() {
       // Cleanup logic if supported
