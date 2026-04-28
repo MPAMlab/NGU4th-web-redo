@@ -36,10 +36,14 @@ export const onRequest: PagesFunction<{
       const { targetKindeId, action, team, jokerCardId, mapping } = await request.json() as any;
       
       if (action === 'set_team') {
-        await env.DB.prepare("UPDATE ngu4th_members SET team = ? WHERE kinde_id = ?")
+        await env.DB.prepare("UPDATE ngu4th_members SET team = ?, is_registered = 1 WHERE kinde_id = ?")
           .bind(team, targetKindeId).run();
         // HOOK: Check achievements for team join
-        await checkAchievements(env.DB, targetKindeId, { type: 'team_join' });
+        try {
+          await checkAchievements(env.DB, targetKindeId, { type: 'team_join' });
+        } catch (achErr) {
+          console.error("Admin: checkAchievements failed:", achErr);
+        }
       } else if (action === 'set_joker') {
         await env.DB.prepare("UPDATE ngu4th_members SET joker_card_id = ? WHERE kinde_id = ?")
           .bind(jokerCardId, targetKindeId).run();
