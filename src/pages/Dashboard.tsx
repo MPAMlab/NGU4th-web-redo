@@ -38,8 +38,11 @@ interface Minigame {
 
 interface Stamp {
   created_at: string;
-  username: string;
-  role: string;
+  username?: string;
+  role?: string;
+  avatar_url?: string;
+  team?: string | null;
+  scannee_id: string;
 }
 
 interface GameSettings {
@@ -123,6 +126,8 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame }: {
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showMyQR, setShowMyQR] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'challenges' | 'achievements' | 'stamps' | 'inventory' | 'profile'>('home');
   const [inventorySubTab, setInventorySubTab] = useState<'team' | 'gallery'>('team');
   const [manualScanId, setManualScanId] = useState('');
@@ -193,10 +198,11 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame }: {
       });
       if (res.ok) {
         alert("集邮成功！");
+        setShowScanner(false);
         fetchData();
       } else {
-        const err = await res.json();
-        alert(err.error || "无效的 ID 或已采集");
+        const err = await res.text();
+        alert(err || "无效的 ID 或已采集");
       }
     } finally { setLoading(false); }
   };
@@ -302,31 +308,113 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame }: {
         )}
 
         {activeTab === 'stamps' && (
-          <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-             <div className="flex items-center gap-4 px-2"><div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center shadow-lg"><BookOpen size={24} fill="currentColor" /></div><div><h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">集邮进度追踪</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Stamp Collection Hub</p></div></div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-xl flex flex-col items-center gap-6 text-center">
-                   <div className="bg-slate-50 p-6 rounded-[2rem] border-4 border-slate-100 shadow-inner group">
-                      <div className="w-48 h-48 bg-white p-4 border-4 border-slate-900 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform duration-500 shadow-2xl">
-                         <QRCodeSVG value={user.kinde_id} size={160} level="H" />
-                      </div>
-                   </div>
-                   <div className="space-y-2"><p className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.3em]">My Collection Identity</p><h4 className="text-2xl font-black italic uppercase tracking-tighter">{user.username}</h4><p className="text-[10px] font-mono text-slate-300 font-bold uppercase">{user.kinde_id}</p></div>
-                   <p className="text-[10px] font-bold text-slate-400 leading-relaxed max-w-[200px]">让 Staff 或其他选手扫描此代码来增加他们的集邮进度。</p>
-                </div>
-                <div className="bg-slate-900 p-8 rounded-[3rem] text-white shadow-2xl space-y-6 relative overflow-hidden">
-                   <div className="relative z-10 space-y-4">
-                      <div className="flex items-center gap-3"><Scan size={20} className="text-indigo-400" /><h3 className="text-xl font-black italic uppercase tracking-widest">扫码录入终端</h3></div>
-                      <QRScannerComp onScan={(id) => handleCollectStamp(id)} />
-                      <div className="pt-4 flex items-center gap-4 opacity-40"><div className="h-[1px] flex-1 bg-white/20"></div><span className="text-[8px] font-black uppercase tracking-widest text-white">Manual Input</span><div className="h-[1px] flex-1 bg-white/20"></div></div>
-                      <div className="flex gap-2"><input value={manualScanId} onChange={(e)=>setManualScanId(e.target.value)} placeholder="KIND_ID..." className="flex-1 bg-white/5 border border-white/10 p-3 rounded-xl text-xs outline-none" /><button onClick={()=>handleCollectStamp(manualScanId)} className="bg-indigo-600 px-4 rounded-xl font-black text-[10px]">GO</button></div>
-                   </div>
-                   <div className="absolute right-[-40px] bottom-[-40px] opacity-10 rotate-12 pointer-events-none scale-150"><Camera size={200}/></div>
+          <div className="space-y-12 animate-in slide-in-from-right-4 duration-500">
+             <div className="flex items-center gap-4 px-2">
+                <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center shadow-lg"><QrCode size={24} fill="currentColor" /></div>
+                <div>
+                   <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">集邮中心 STAMP HUB</h2>
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Connect & Collect</p>
                 </div>
              </div>
-             <div className="bg-white rounded-[3rem] border-2 border-slate-100 shadow-2xl overflow-hidden">
-                <div className="bg-slate-50 p-6 flex justify-between items-center border-b-2 border-slate-100"><h3 className="font-black italic uppercase text-xs tracking-widest flex items-center gap-2"><ShieldCheck size={16} className="text-indigo-600"/> 已采集名录 Collection Log</h3><Badge variant="outline">{stamps.length} ENTRIES</Badge></div>
-                <div className="max-h-[400px] overflow-y-auto custom-scrollbar">{stamps.map((s, i) => (<div key={i} className="p-6 border-b border-slate-50 flex items-center justify-between hover:bg-slate-50 transition-all group"><div className="flex items-center gap-4"><div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${s.role === 'admin' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}><User size={24}/></div><div><p className="font-black text-sm uppercase text-slate-900">{s.username}</p><p className="text-[9px] font-bold text-slate-400 uppercase italic">{s.role === 'admin' ? 'Official Staff' : 'Registered Player'}</p></div></div><div className="text-right"><p className="text-[10px] font-black text-indigo-400 opacity-60 italic">{new Date(s.created_at).toLocaleDateString()}</p><p className="text-[8px] font-bold text-slate-300 uppercase">Authenticated</p></div></div>))}</div>
+
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button onClick={() => setShowMyQR(true)} className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-100 shadow-xl hover:border-indigo-500 hover:scale-[1.02] transition-all flex items-center justify-between group text-slate-900">
+                   <div className="text-left">
+                      <p className="text-[10px] font-black uppercase text-indigo-500 tracking-widest mb-1">My Identity</p>
+                      <h4 className="text-xl font-black italic uppercase">展示我的二维码</h4>
+                   </div>
+                   <div className="w-14 h-14 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all shadow-inner"><QrCode size={28}/></div>
+                </button>
+                <button onClick={() => setShowScanner(true)} className="bg-slate-900 p-8 rounded-[2.5rem] shadow-xl hover:bg-indigo-600 hover:scale-[1.02] transition-all flex items-center justify-between group text-white">
+                   <div className="text-left">
+                      <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-1">Scan Action</p>
+                      <h4 className="text-xl font-black italic uppercase">立即扫码采集</h4>
+                   </div>
+                   <div className="w-14 h-14 bg-white/10 text-white rounded-2xl flex items-center justify-center group-hover:bg-white group-hover:text-indigo-600 transition-all shadow-inner"><Scan size={28}/></div>
+                </button>
+             </div>
+
+             {/* Modals */}
+             {showMyQR && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+                   <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={() => setShowMyQR(false)}></div>
+                   <div className="bg-white rounded-[3rem] p-10 shadow-2xl relative z-10 max-w-sm w-full text-center space-y-8 animate-in zoom-in-95 duration-300">
+                      <button onClick={() => setShowMyQR(false)} className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-900 transition-colors"><X size={24}/></button>
+                      <div className="space-y-2">
+                         <h3 className="text-2xl font-black italic uppercase tracking-tighter">我的身份码</h3>
+                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic">Show this to other players</p>
+                      </div>
+                      <div className="bg-slate-50 p-6 rounded-[2.5rem] border-4 border-slate-100 shadow-inner flex justify-center">
+                         <div className="bg-white p-4 border-4 border-slate-900 rounded-2xl shadow-2xl">
+                            <QRCodeSVG value={user.kinde_id} size={200} level="H" />
+                         </div>
+                      </div>
+                      <div className="space-y-1">
+                         <p className="text-xl font-black italic uppercase">{user.username}</p>
+                         <p className="text-[10px] font-mono font-bold text-slate-300 uppercase">{user.kinde_id}</p>
+                      </div>
+                   </div>
+                </div>
+             )}
+
+             {showScanner && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+                   <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={() => setShowScanner(false)}></div>
+                   <div className="bg-slate-900 rounded-[3rem] p-10 shadow-2xl relative z-10 max-w-lg w-full text-center space-y-8 animate-in zoom-in-95 duration-300 border border-white/10">
+                      <button onClick={() => setShowScanner(false)} className="absolute top-6 right-6 p-2 text-white/40 hover:text-white transition-colors"><X size={24}/></button>
+                      <div className="space-y-2">
+                         <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white">扫描终端</h3>
+                         <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest italic">Aim at the QR code</p>
+                      </div>
+                      <div className="overflow-hidden rounded-[2.5rem] border-4 border-indigo-500/50 shadow-2xl">
+                         <QRScannerComp onScan={(id) => handleCollectStamp(id)} />
+                      </div>
+                      <div className="pt-4 flex items-center gap-4 opacity-20"><div className="h-[1px] flex-1 bg-white/20"></div><span className="text-[8px] font-black uppercase tracking-widest text-white">Manual Input</span><div className="h-[1px] flex-1 bg-white/20"></div></div>
+                      <div className="flex gap-2">
+                         <input value={manualScanId} onChange={(e)=>setManualScanId(e.target.value)} placeholder="KIND_ID..." className="flex-1 bg-white/5 border border-white/10 p-4 rounded-2xl text-xs outline-none text-white font-bold" />
+                         <button onClick={()=>handleCollectStamp(manualScanId)} className="bg-indigo-600 text-white px-8 rounded-2xl font-black text-xs uppercase hover:bg-indigo-500 transition-all">GO</button>
+                      </div>
+                   </div>
+                </div>
+             )}
+
+             <div className="space-y-6">
+                <div className="flex items-center justify-between px-2">
+                   <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2 italic"><Activity size={14} className="text-indigo-500" /> 已集邮列表 COLLECTED ({stamps.length})</h3>
+                   <Badge variant="outline" className="border-slate-200 text-slate-400 font-bold">{stamps.length} ENTRIES</Badge>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                   {stamps.map((s, i) => {
+                      const roleDisplay = !s.username ? 'hidden' : (s.role === 'admin' ? 'staff' : (s.team ? `${s.team.toUpperCase()} TEAM` : 'player'));
+                      const roleColor = !s.username ? 'bg-slate-100 text-slate-400 border-slate-200' : (s.role === 'admin' ? 'bg-amber-100 text-amber-600 border-amber-200' : (s.team === 'red' ? 'bg-red-50 text-red-600 border-red-100' : (s.team === 'blue' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-slate-100 text-slate-500 border-slate-200')));
+                      
+                      return (
+                         <div key={i} className="bg-white p-4 rounded-full border-2 border-slate-100 shadow-lg flex items-center gap-4 group hover:border-indigo-200 transition-all pr-6">
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 border-2 border-white shadow-inner flex-shrink-0 group-hover:scale-110 transition-transform">
+                               {s.avatar_url ? (
+                                  <img src={s.avatar_url} alt={s.username} className="w-full h-full object-cover" />
+                               ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-slate-300"><User size={24} /></div>
+                               )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                               <p className="font-black text-sm uppercase text-slate-900 truncate">{s.username || 'Custom Data'}</p>
+                               <div className={`mt-0.5 inline-block px-2 py-0.5 rounded-full text-[8px] font-black border ${roleColor} uppercase italic tracking-tighter`}>{roleDisplay}</div>
+                            </div>
+                            <div className="text-right flex-shrink-0 opacity-20 group-hover:opacity-100 transition-opacity">
+                               <ShieldCheck size={16} className="text-indigo-600" />
+                            </div>
+                         </div>
+                      );
+                   })}
+                   {stamps.length === 0 && (
+                      <div className="col-span-full py-20 bg-white rounded-[3rem] border-2 border-dashed border-slate-100 text-center space-y-4">
+                         <QrCode size={48} className="mx-auto text-slate-200" />
+                         <p className="font-black text-slate-400 uppercase italic tracking-widest">还没有采集到任何邮戳 No Stamps Found</p>
+                      </div>
+                   )}
+                </div>
              </div>
           </div>
         )}

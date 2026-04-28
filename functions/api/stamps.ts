@@ -18,9 +18,9 @@ export const onRequest: PagesFunction<{
 
   if (request.method === "GET") {
     const stamps = await env.DB.prepare(`
-      SELECT s.created_at, m.username, m.role
+      SELECT s.created_at, s.scannee_id, m.username, m.role, m.avatar_url, m.team
       FROM ngu4th_stamps s
-      JOIN ngu4th_members m ON s.scannee_id = m.kinde_id
+      LEFT JOIN ngu4th_members m ON s.scannee_id = m.kinde_id
       WHERE s.collector_id = ?
       ORDER BY s.created_at DESC
     `).bind(kindeId).all();
@@ -35,25 +35,25 @@ export const onRequest: PagesFunction<{
     
     if (action === 'collect') {
       if (!scanneeId) return new Response("Missing scanneeId", { status: 400 });
+      if (scanneeId === kindeId) return new Response("Cannot scan yourself", { status: 400 });
+
+      // Check if already collected
+      const existing = await env.DB.prepare("SELECT id FROM ngu4th_stamps WHERE collector_id = ? AND scannee_id = ?")
+        .bind(kindeId, scanneeId).first();
       
-      // If it's a valid kinde_id (usually starts with 'kp_' or similar, but we check if user exists)
+      if (existing) return new Response("Already collected", { status: 400 });
+
+      // Record the stamp
+      await env.DB.prepare("INSERT INTO ngu4th_stamps (collector_id, scannee_id) VALUES (?, ?)")
+        .bind(kindeId, scanneeId).run();
+
+      // Check if it's a member
       const targetUser: any = await env.DB.prepare("SELECT kinde_id FROM ngu4th_members WHERE kinde_id = ?")
         .bind(scanneeId).first();
 
       if (targetUser) {
-        if (scanneeId === kindeId) return new Response("Cannot scan yourself", { status: 400 });
-
-        // Check if already collected
-        const existing = await env.DB.prepare("SELECT id FROM ngu4th_stamps WHERE collector_id = ? AND scannee_id = ?")
-          .bind(kindeId, scanneeId).first();
-        
-        if (!existing) {
-          await env.DB.prepare("INSERT INTO ngu4th_stamps (collector_id, scannee_id) VALUES (?, ?)")
-            .bind(kindeId, scanneeId).run();
-          
-          // HOOK: Check achievements for stamps
-          await checkAchievements(env.DB, kindeId, { type: 'stamp', scanneeId: scanneeId });
-        }
+        // HOOK: Check achievements for stamps
+        await checkAchievements(env.DB, kindeId, { type: 'stamp', scanneeId: scanneeId });
       } else {
         // Not a user ID, treat as plain text QR
         await checkAchievements(env.DB, kindeId, { type: 'qr_text', text: scanneeId });
