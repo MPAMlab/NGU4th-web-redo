@@ -292,6 +292,8 @@ export const AdminDashboard = () => {
 
   const activeMatch = matches.find(m => m.id.toString() === systemState.active_match_id);
   const activeGame = games.find(g => g.status === 'active');
+  const redPlayer = members.find(m => m.kinde_id === activeMatch?.red_player_id);
+  const bluePlayer = members.find(m => m.kinde_id === activeMatch?.blue_player_id);
   const redTeamFakeCards = Array.from(new Map(inventory.filter(i => i.owner_id === 'red' && i.card_type === 'fake').map(item => [item.card_id, item])).values());
   const blueTeamFakeCards = Array.from(new Map(inventory.filter(i => i.owner_id === 'blue' && i.card_type === 'fake').map(item => [item.card_id, item])).values());
   const filteredLibrary = cardLibrary.filter(c => libraryFilter === 'all' || c.type === libraryFilter);
