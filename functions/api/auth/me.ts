@@ -23,6 +23,11 @@ export const onRequest: PagesFunction<{
       .bind(kindeId)
       .first();
 
+    if (user) {
+      const { checkAchievements } = await import("../lib/achievements");
+      await checkAchievements(env.DB, kindeId, { type: 'login' });
+    }
+
     const achievements = await env.DB.prepare(`
       SELECT a.* FROM ngu4th_achievements a
       JOIN ngu4th_user_achievements ua ON a.id = ua.achievement_id

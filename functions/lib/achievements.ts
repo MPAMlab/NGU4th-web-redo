@@ -1,7 +1,7 @@
 export async function checkAchievements(db: D1Database, kindeId: string, context: { type: string, value?: any, [key: string]: any }) {
   try {
     // 1. 获取用户信息
-    const user: any = await db.prepare("SELECT role, team FROM ngu4th_members WHERE kinde_id = ?").bind(kindeId).first();
+    const user: any = await db.prepare("SELECT * FROM ngu4th_members WHERE kinde_id = ?").bind(kindeId).first();
     if (!user) return;
 
     // 2. 获取所有带触发器的成就模板
@@ -34,12 +34,16 @@ export async function checkAchievements(db: D1Database, kindeId: string, context
             if (user.role === tpl.trigger_value) shouldGrant = true;
             break;
           case 'registration':
-            if (context.type === 'registration') shouldGrant = true;
+            if (context.type === 'registration' || user.is_registered === 1) shouldGrant = true;
             break;
           case 'legacy':
-            if (context.type === 'registration') {
-               const isLegacy: any = await db.prepare("SELECT kinde_id FROM members WHERE kinde_id = ?").bind(kindeId).first();
-               if (isLegacy) shouldGrant = true;
+            if (context.type === 'registration' || context.type === 'login') {
+               try {
+                 const isLegacy: any = await db.prepare("SELECT kinde_id FROM members WHERE kinde_id = ?").bind(kindeId).first();
+                 if (isLegacy) shouldGrant = true;
+               } catch (e) {
+                 // members table might not exist in all environments
+               }
             }
             break;
           case 'score_ge':

@@ -388,21 +388,24 @@ export const DashboardPage = ({ user, achievements, activeGame }: { user: User, 
                    <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2 px-2"><Activity size={14} className="text-indigo-500" /> 贡献排行 RANKING</h3>
                    <div className="bg-white rounded-[2.5rem] border-2 border-slate-100 shadow-xl overflow-hidden">
                       <div className="max-h-[500px] overflow-y-auto">
-                         {rankings.map((r, i) => (
-                            <div key={i} className="p-6 border-b border-slate-50 flex items-center justify-between hover:bg-slate-50 transition-all">
-                               <div className="flex items-center gap-4">
-                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${i < 3 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>{i + 1}</div>
-                                  <div>
-                                     <p className="font-black text-sm uppercase text-slate-900">{r.username}</p>
-                                     <Badge variant="outline" className={`mt-1 ${r.team === 'red' ? 'text-red-500 border-red-100' : 'text-blue-500 border-blue-100'}`}>{r.team}</Badge>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                   <p className="text-xl font-black text-slate-900">{r.achievement_count}</p>
-                                   <p className="text-[8px] font-bold text-slate-400 uppercase">Achievements</p>
-                                </div>
-                            </div>
-                         ))}
+                         {rankings.map((r, i) => {
+                            const isMe = r.username === user.username;
+                            return (
+                               <div key={i} className={`p-6 border-b border-slate-50 flex items-center justify-between hover:bg-slate-50 transition-all ${isMe ? 'bg-indigo-50/50 border-l-4 border-l-indigo-500' : ''}`}>
+                                  <div className="flex items-center gap-4">
+                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${i < 3 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>{i + 1}</div>
+                                     <div>
+                                        <p className={`font-black text-sm uppercase ${isMe ? 'text-indigo-600' : 'text-slate-900'}`}>{r.username} {isMe && "(ME)"}</p>
+                                        <Badge variant="outline" className={`mt-1 ${r.team === 'red' ? 'text-red-500 border-red-100' : 'text-blue-500 border-blue-100'}`}>{r.team}</Badge>
+                                     </div>
+                                   </div>
+                                   <div className="text-right">
+                                      <p className={`text-xl font-black ${isMe ? 'text-indigo-600' : 'text-slate-900'}`}>{r.achievement_count}</p>
+                                      <p className="text-[8px] font-bold text-slate-400 uppercase">Achievements</p>
+                                   </div>
+                               </div>
+                            );
+                         })}
                       </div>
                    </div>
                 </div>
