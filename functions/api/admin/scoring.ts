@@ -46,13 +46,13 @@ export const onRequest: PagesFunction<{
 
       // Helper to calculate and insert round data
       const commitRound = async (playerId: string, team: string, data: any) => {
-        // 1. Get Base Exponent from Active Game
-        const activeGame: any = await env.DB.prepare("SELECT red_exponent, blue_exponent FROM ngu4th_games WHERE status = 'active'").first();
-        const baseTeamExponent = team === 'red' ? (activeGame?.red_exponent || 1.0) : (activeGame?.blue_exponent || 1.0);
+        // 1. Get CURRENT Global Exponent from Active Game
+        const activeGame: any = await env.DB.prepare("SELECT id, red_exponent, blue_exponent FROM ngu4th_games WHERE status = 'active'").first();
+        let currentTeamExponent = team === 'red' ? (activeGame?.red_exponent || 1.0) : (activeGame?.blue_exponent || 1.0);
 
         // 2. Fetch all selected fake cards data
         let fakeMultiplier = 1.0;
-        let fakeExponentProd = 1.0; // Use Product
+        let exponentModified = false;
         
         if (data.fakeCards) {
           const cardIds = data.fakeCards.split(',').filter((id: string) => id.trim() !== '');
@@ -63,21 +63,30 @@ export const onRequest: PagesFunction<{
             
             for (const card of cards.results) {
               if (card.multiplier) fakeMultiplier *= card.multiplier;
-              // Multiply exponents as per (base^a)^b = base^(a*b) logic
-              if (card.exponent_bonus) fakeExponentProd *= card.exponent_bonus; 
+              // Multiply exponents: (base^a)^b = base^(a*b)
+              if (card.exponent_bonus && card.exponent_bonus !== 1.0) {
+                currentTeamExponent *= card.exponent_bonus;
+                exponentModified = true;
+              }
             }
           }
+        }
+
+        // 3. If exponent was modified, persist it back to the game record
+        if (exponentModified && activeGame) {
+          const col = team === 'red' ? 'red_exponent' : 'blue_exponent';
+          await env.DB.prepare(`UPDATE ngu4th_games SET ${col} = ? WHERE id = ?`)
+            .bind(currentTeamExponent, activeGame.id).run();
         }
 
         const jokerMultiplier = parseFloat(data.multiplier) || 1.0;
         const totalMultiplier = jokerMultiplier * fakeMultiplier;
         const baseScore = parseFloat(data.baseScore);
-        
-        // Final exponent for THIS round = Team Base * Card Bonuses
-        const finalRoundExponent = baseTeamExponent * fakeExponentProd;
 
-        // Placeholder for achievement types (simplified calculation)
-        const totalScorePlaceholder = Math.pow(baseScore, finalRoundExponent) * totalMultiplier; 
+        // Use the UPDATED currentTeamExponent for the individual round's contribution calculation
+        // Formula: (Total Base Sum so far) ^ currentTeamExponent * Product of Multipliers
+        // Since we are inside commitRound, we'll store this round's state
+        const totalScorePlaceholder = Math.pow(baseScore, currentTeamExponent) * totalMultiplier; 
         
         await env.DB.prepare(`
           INSERT INTO ngu4th_rounds (match_id, player_id, team, round_number, base_score, multiplier, exponent, total_score, round_type, tarot_id, poker_hand, active_fake_cards, game_id)
@@ -85,12 +94,12 @@ export const onRequest: PagesFunction<{
         `).bind(
           matchId, playerId, team, 
           roundType === 'red_pick' ? 1 : 2, 
-          baseScore, totalMultiplier, finalRoundExponent, 
+          baseScore, totalMultiplier, currentTeamExponent, 
           totalScorePlaceholder, roundType, data.tarotId || null, data.hand, data.fakeCards || null,
           match.game_id
         ).run();
 
-        // HOOK: Check achievements
+        // HOOK: Check achievements (passing updated game state)
         await checkAchievements(env.DB, playerId, { 
           type: 'score', 
           value: totalScorePlaceholder,

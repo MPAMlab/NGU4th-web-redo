@@ -30,31 +30,29 @@ export const onRequest: PagesFunction<{
             `).bind(activeMatchId).first();
           }
 
-          // 4. Get team totals using new formula: (Sum of Base ^ Product of Exp) * Product of Multipliers
+          // 4. Get team totals using new formula: (Sum of Base ^ Current Global Exp) * Product of Multipliers
           const rawRounds: any = await env.DB.prepare(`
-            SELECT team, base_score, multiplier, exponent 
+            SELECT team, base_score, multiplier 
             FROM ngu4th_rounds 
             WHERE game_id = (SELECT id FROM ngu4th_games WHERE status = 'active')
           `).all();
           
           const teamAggregates: any = {
-            red: { sumBase: 0, prodExp: 1.0, prodMult: 1.0, hasRounds: false },
-            blue: { sumBase: 0, prodExp: 1.0, prodMult: 1.0, hasRounds: false }
+            red: { sumBase: 0, prodMult: 1.0 },
+            blue: { sumBase: 0, prodMult: 1.0 }
           };
 
           (rawRounds.results || []).forEach((r: any) => {
             const team = r.team as 'red' | 'blue';
             if (teamAggregates[team]) {
               teamAggregates[team].sumBase += (r.base_score || 0);
-              teamAggregates[team].prodExp *= (r.exponent || 1.0);
               teamAggregates[team].prodMult *= (r.multiplier || 1.0);
-              teamAggregates[team].hasRounds = true;
             }
           });
 
           const teamScores = {
-            red: Math.pow(teamAggregates.red.sumBase, teamAggregates.red.hasRounds ? teamAggregates.red.prodExp : teamExponents.red) * teamAggregates.red.prodMult,
-            blue: Math.pow(teamAggregates.blue.sumBase, teamAggregates.blue.hasRounds ? teamAggregates.blue.prodExp : teamExponents.blue) * teamAggregates.blue.prodMult
+            red: Math.pow(teamAggregates.red.sumBase, teamExponents.red) * teamAggregates.red.prodMult,
+            blue: Math.pow(teamAggregates.blue.sumBase, teamExponents.blue) * teamAggregates.blue.prodMult
           };
 
           // 5. Get recent rounds with Tarot names
