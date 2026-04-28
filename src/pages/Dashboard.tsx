@@ -173,10 +173,10 @@ export const DashboardPage = ({ user, achievements, activeGame }: { user: User, 
 
   const availableTabs = [
     { id: 'home', label: '对阵报名', icon: <BookOpen size={20} />, visible: true },
-    { id: 'challenges', label: '小游戏', icon: <Zap size={20} />, visible: activeGame?.show_minigames === 1 },
-    { id: 'stamps', label: '集邮', icon: <QrCode size={20} />, visible: activeGame?.show_stamps === 1 },
-    { id: 'inventory', label: '卡牌库', icon: <Swords size={20} />, visible: activeGame?.show_cards === 1 },
-    { id: 'achievements', label: '积分排行', icon: <Trophy size={20} />, visible: activeGame?.show_achievements === 1 },
+    { id: 'challenges', label: '小游戏', icon: <Zap size={20} />, visible: user.role === 'admin' || activeGame?.show_minigames === 1 },
+    { id: 'stamps', label: '集邮', icon: <QrCode size={20} />, visible: user.role === 'admin' || activeGame?.show_stamps === 1 },
+    { id: 'inventory', label: '卡牌库', icon: <Swords size={20} />, visible: user.role === 'admin' || activeGame?.show_cards === 1 },
+    { id: 'achievements', label: '积分排行', icon: <Trophy size={20} />, visible: user.role === 'admin' || activeGame?.show_achievements === 1 },
     { id: 'profile', label: '个人中心', icon: <User size={20} />, visible: true }
   ].filter(t => t.visible);
 

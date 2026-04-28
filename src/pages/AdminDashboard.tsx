@@ -693,8 +693,25 @@ export const AdminDashboard = () => {
                                  <div className="space-y-2"><label className="text-[8px] font-black uppercase opacity-40 tracking-widest block text-center italic">1. Base Score</label><input name={`${team}_base`} type="number" step="any" required placeholder="0.0" className="w-full text-center text-5xl font-black p-4 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:border-indigo-600" /></div>
                                  <div className={`p-4 rounded-xl border transition-all space-y-4 ${isHome ? 'bg-indigo-50/20 border-indigo-100' : 'bg-slate-50 opacity-40 border-slate-200'}`}>
                                     <div className="flex justify-between items-start"><div className="flex-1"><label className={`text-[8px] font-black uppercase tracking-widest ${isHome ? 'text-indigo-600 opacity-100' : 'opacity-40'}`}>2. Joker: {player?.joker_name || 'NONE'}</label></div>{isHome && player?.joker_card_id && <label className="flex items-center gap-2 cursor-pointer bg-indigo-600 text-white px-3 py-1.5 rounded-lg border-b-2 border-indigo-900 active:border-b-0 active:translate-y-0.5"><input type="checkbox" checked={useJoker} onChange={(e)=>setUseJoker(e.target.checked)} className="w-4 h-4" /><span className="text-[8px] font-black uppercase italic">APPLY</span></label>}</div>
-                                    <div className="relative">{(isHome && useJoker) ? <div className="relative"><input name={`${team}_mult`} type="number" step="any" defaultValue={player?.joker_is_variable ? "" : (player?.joker_multiplier || 1.5)} placeholder={player?.joker_is_variable ? "录入最终倍率..." : ""} readOnly={!player?.joker_is_variable} className={`w-full p-4 rounded-xl font-black text-4xl text-center outline-none ${player?.joker_is_variable ? 'bg-white border-indigo-500 border-2 shadow-inner' : 'bg-slate-100 text-slate-400'}`} /></div> : <input value="1.0" readOnly className="w-full bg-slate-100 p-4 rounded-xl font-black text-4xl text-center opacity-30 border border-slate-200 outline-none" />}</div>
-                                 </div>
+                                    <div className="relative">
+                                      <input 
+                                         name={`${team}_mult`} 
+                                         type="number" 
+                                         step="any" 
+                                         value={useJoker 
+                                            ? (player?.joker_is_variable ? undefined : (player?.joker_multiplier || 1.5)) 
+                                            : "1.0"
+                                         }
+                                         defaultValue={useJoker && player?.joker_is_variable ? "" : undefined}
+                                         placeholder={useJoker && player?.joker_is_variable ? "录入最终倍率..." : ""} 
+                                         readOnly={!useJoker || !player?.joker_is_variable} 
+                                         className={`w-full p-4 rounded-xl font-black text-4xl text-center outline-none transition-all ${
+                                            (useJoker && player?.joker_is_variable) 
+                                               ? 'bg-white border-indigo-500 border-2 shadow-inner opacity-100' 
+                                               : (useJoker ? 'bg-slate-100 text-slate-400 opacity-100' : 'bg-slate-100 text-slate-400 opacity-30')
+                                         }`} 
+                                      />
+                                    </div>                                 </div>
                                  <div className="grid grid-cols-2 gap-4"><div className="space-y-1"><label className="text-[7px] font-black uppercase opacity-40 block tracking-widest italic">3. Tarot</label><select name={`${team}_tarot`} className={selectClass}><option value="">None</option>{cardLibrary.filter(c=>c.type==='tarot').map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></div><div className="space-y-1"><label className="text-[7px] font-black uppercase opacity-40 block tracking-widest italic">4. Hand</label><select name={`${team}_hand`} className={selectClass}><option value="">Select Hand...</option>{HAND_TYPES_LIST.map(h => <option key={h} value={h}>{h}</option>)}</select></div></div>
                                  <div className="bg-emerald-600/5 p-4 rounded-xl border-4 border-emerald-600/5 space-y-4 shadow-inner"><p className="text-[7px] font-black uppercase text-emerald-600 tracking-widest text-center italic opacity-60">5. Team Fake Cards</p><div className="grid grid-cols-2 gap-2">{(team === 'red' ? redTeamFakeCards : blueTeamFakeCards).map(f=><label key={f.id} className="flex items-center gap-2 cursor-pointer bg-white/80 p-2 rounded-lg border border-slate-100 shadow-sm"><input type="checkbox" name={`${team}_fake_cards`} value={f.card_id} className="w-4 h-4 accent-emerald-600" /><span className="text-[9px] font-black uppercase italic truncate leading-none">{f.card_name}</span></label>)}</div></div>
                               </div>
