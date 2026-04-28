@@ -5,6 +5,7 @@ import { DashboardPage } from './pages/Dashboard'
 import { AdminDashboard } from './pages/AdminDashboard'
 import { LiveView } from './pages/LiveView'
 import { MatchHistory } from './pages/MatchHistory'
+import { NotFound } from './pages/NotFound'
 import { Trophy, Swords, Zap, LogIn, MapPin, Star, BookOpen, Info, Hash, Activity, Users, History } from 'lucide-react'
 import { AchievementToast, Achievement } from './components/AchievementToast'
 
@@ -211,6 +212,7 @@ function App() {
           } />
           <Route path="/live" element={<LiveView />} />
           <Route path="/history" element={<MatchHistory />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
     </Router>

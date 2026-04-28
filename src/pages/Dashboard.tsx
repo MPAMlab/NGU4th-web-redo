@@ -176,14 +176,14 @@ export const DashboardPage = ({ user, achievements, activeGame }: { user: User, 
     { id: 'challenges', label: '小游戏', icon: <Zap size={20} />, visible: user.role === 'admin' || activeGame?.show_minigames === 1 },
     { id: 'stamps', label: '集邮', icon: <QrCode size={20} />, visible: user.role === 'admin' || activeGame?.show_stamps === 1 },
     { id: 'inventory', label: '卡牌库', icon: <Swords size={20} />, visible: user.role === 'admin' || activeGame?.show_cards === 1 },
-    { id: 'achievements', label: '积分排行', icon: <Trophy size={20} />, visible: user.role === 'admin' || activeGame?.show_achievements === 1 },
+    { id: 'achievements', label: '成就中心', icon: <Trophy size={20} />, visible: user.role === 'admin' || activeGame?.show_achievements === 1 },
     { id: 'profile', label: '个人中心', icon: <User size={20} />, visible: true }
-  ].filter(t => t.visible);
+    ].filter(t => t.visible);
 
-  return (
+    return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-32">
       <div className="container mx-auto px-4 py-8 max-w-4xl space-y-12">
-        
+
         {activeTab === 'home' && (
           <div className="space-y-12 animate-in fade-in duration-500">
              <section className="relative rounded-[3rem] bg-slate-900 p-10 overflow-hidden text-white shadow-2xl">
@@ -244,7 +244,8 @@ export const DashboardPage = ({ user, achievements, activeGame }: { user: User, 
                          </div>
                          <p className="text-sm font-bold text-slate-400 leading-relaxed italic border-l-4 border-purple-500 pl-4">{g.short_desc}</p>
                          <div className="flex gap-6 mt-4">
-                            <div className="flex flex-col"><span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">已报名人数</span><span className="text-lg font-black italic tabular-nums">{g.participant_count} / {g.max_players}</span></div>                            <div className="flex flex-col"><span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">优胜奖励</span><span className="text-lg font-black italic text-purple-600 uppercase">{g.fake_card_name || '???'}</span></div>
+                            <div className="flex flex-col"><span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">已报名人数</span><span className="text-lg font-black italic tabular-nums">{g.participant_count} / {g.max_players}</span></div>
+                            <div className="flex flex-col"><span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">优胜奖励</span><span className="text-lg font-black italic text-purple-600 uppercase">{g.fake_card_name || '???'}</span></div>
                          </div>
                       </div>
                       <button 
@@ -360,54 +361,29 @@ export const DashboardPage = ({ user, achievements, activeGame }: { user: User, 
                 <div className="flex items-center gap-4 px-2">
                    <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center shadow-lg"><Trophy size={24} fill="currentColor" /></div>
                    <div>
-                      <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">成就与荣誉榜</h2>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Locked Assets & Rankings</p>
+                      <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">成就中心 ACHIEVEMENT HUB</h2>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Your Medals & Collection</p>
                    </div>
                 </div>
              </div>
 
-             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                <div className="lg:col-span-2 space-y-6">
-                   <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2 px-2"><Star size={14} className="text-amber-500" /> 我的成就 COLLECTION</h3>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {achievements.map(a => (
-                         <div key={a.id} className="bg-white p-6 rounded-[2rem] border-2 border-slate-100 shadow-xl flex items-center gap-6 group hover:border-amber-200 transition-all">
-                            <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg border-2 border-amber-100/50">
-                               <Star size={24} fill="currentColor" />
-                            </div>
-                            <div className="space-y-1">
-                               <p className="font-black text-lg uppercase text-slate-900 leading-none">{a.name}</p>
-                               <p className="text-[9px] font-bold text-slate-400 uppercase italic leading-relaxed mt-1">{a.condition}</p>
-                            </div>
+             <div className="space-y-6">
+                <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2 px-2"><Star size={14} className="text-amber-500" /> 我的成就 COLLECTION ({achievements.length})</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                   {achievements.map(a => (
+                      <div key={a.id} className="bg-white p-6 rounded-[2rem] border-2 border-slate-100 shadow-xl flex items-center gap-6 group hover:border-amber-200 transition-all">
+                         <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg border-2 border-amber-100/50">
+                            <Star size={24} fill="currentColor" />
                          </div>
-                      ))}
-                   </div>
-                </div>
-
-                <div className="space-y-6">
-                   <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2 px-2"><Activity size={14} className="text-indigo-500" /> 贡献排行 RANKING</h3>
-                   <div className="bg-white rounded-[2.5rem] border-2 border-slate-100 shadow-xl overflow-hidden">
-                      <div className="max-h-[500px] overflow-y-auto">
-                         {rankings.map((r, i) => {
-                            const isMe = r.username === user.username;
-                            return (
-                               <div key={i} className={`p-6 border-b border-slate-50 flex items-center justify-between hover:bg-slate-50 transition-all ${isMe ? 'bg-indigo-50/50 border-l-4 border-l-indigo-500' : ''}`}>
-                                  <div className="flex items-center gap-4">
-                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${i < 3 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>{i + 1}</div>
-                                     <div>
-                                        <p className={`font-black text-sm uppercase ${isMe ? 'text-indigo-600' : 'text-slate-900'}`}>{r.username} {isMe && "(ME)"}</p>
-                                        <Badge variant="outline" className={`mt-1 ${r.team === 'red' ? 'text-red-500 border-red-100' : 'text-blue-500 border-blue-100'}`}>{r.team}</Badge>
-                                     </div>
-                                   </div>
-                                   <div className="text-right">
-                                      <p className={`text-xl font-black ${isMe ? 'text-indigo-600' : 'text-slate-900'}`}>{r.achievement_count}</p>
-                                      <p className="text-[8px] font-bold text-slate-400 uppercase">Achievements</p>
-                                   </div>
-                               </div>
-                            );
-                         })}
+                         <div className="space-y-1">
+                            <p className="font-black text-lg uppercase text-slate-900 leading-none">{a.name}</p>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase italic leading-relaxed mt-1">{a.condition}</p>
+                         </div>
                       </div>
-                   </div>
+                   ))}
+                   {achievements.length === 0 && (
+                      <div className="col-span-full py-20 text-center opacity-20 italic font-black uppercase text-2xl tracking-widest">暂无已获得成就 No Achievements Earned</div>
+                   )}
                 </div>
              </div>
           </div>
