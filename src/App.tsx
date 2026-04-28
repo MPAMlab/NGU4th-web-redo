@@ -39,7 +39,7 @@ function App() {
     try {
       const [authRes, sysRes] = await Promise.all([
         fetch('/api/auth/me'),
-        fetch('/api/admin/system')
+        fetch('/api/system')
       ]);
       
       if (authRes.ok) {
@@ -58,7 +58,7 @@ function App() {
 
       if (sysRes.ok) {
         const sysData = await sysRes.json();
-        setActiveGame(sysData.games?.find((g: any) => g.status === 'active'));
+        setActiveGame(sysData.activeGame);
       }
     } catch (e) {
       console.error("Polling error", e);

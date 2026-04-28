@@ -14,6 +14,7 @@ interface PublicPlayer {
 interface RegistrationData {
   currentUser: RegistrationStatus | null;
   publicRoster: PublicPlayer[];
+  registrationOpen?: boolean;
 }
 
 export const RegistrationPage = () => {
@@ -76,6 +77,9 @@ export const RegistrationPage = () => {
             <p className="text-sm uppercase tracking-widest text-muted-foreground font-bold">比赛信息</p>
             <p><strong>地点：</strong> 郑州某处</p>
             <p><strong>时间：</strong> 2026年5月初</p>
+            {!data.registrationOpen && (
+              <p className="text-destructive font-bold text-sm bg-destructive/10 inline-block px-2 py-1 rounded">⚠️ 报名暂未开放或已结束</p>
+            )}
           </div>
           <div className="space-y-2 text-right md:text-left">
             <p className="text-sm uppercase tracking-widest text-muted-foreground font-bold">我的状态</p>
@@ -96,14 +100,14 @@ export const RegistrationPage = () => {
             <>
               <button 
                 onClick={() => handleAction('register', 'red')}
-                disabled={loading}
+                disabled={loading || !data.registrationOpen}
                 className="flex-1 bg-red-600 text-white font-bold py-4 rounded-xl hover:bg-red-700 transition-all shadow-lg hover:scale-[1.02] active:scale-95 disabled:opacity-50"
               >
                 加入红队
               </button>
               <button 
                 onClick={() => handleAction('register', 'blue')}
-                disabled={loading}
+                disabled={loading || !data.registrationOpen}
                 className="flex-1 bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:scale-[1.02] active:scale-95 disabled:opacity-50"
               >
                 加入蓝队
@@ -112,7 +116,7 @@ export const RegistrationPage = () => {
           ) : (
             <button 
               onClick={() => handleAction('cancel')}
-              disabled={loading}
+              disabled={loading || !data.registrationOpen}
               className="w-full bg-secondary text-secondary-foreground font-bold py-4 rounded-xl hover:bg-secondary/80 transition-all disabled:opacity-50"
             >
               取消报名

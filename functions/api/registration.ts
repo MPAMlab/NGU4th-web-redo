@@ -22,6 +22,9 @@ export const onRequest: PagesFunction<{
       return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401 });
     }
 
+    const config: any = await env.DB.prepare("SELECT value FROM ngu4th_system_config WHERE key = 'registration_open'").first();
+    const isRegistrationOpen = config?.value === 'true';
+
     if (request.method === "GET") {
       const member = await env.DB.prepare("SELECT * FROM ngu4th_members WHERE kinde_id = ?")
         .bind(kindeId).first();
@@ -30,7 +33,8 @@ export const onRequest: PagesFunction<{
 
       return new Response(JSON.stringify({
         currentUser: member,
-        publicRoster: roster.results || []
+        publicRoster: roster.results || [],
+        registrationOpen: isRegistrationOpen
       }), {
         headers: { "Content-Type": "application/json" }
       });
@@ -40,6 +44,9 @@ export const onRequest: PagesFunction<{
       const { action, team } = await request.json() as { action: string, team?: string };
       
       if (action === "register") {
+        if (!isRegistrationOpen) {
+          return new Response(JSON.stringify({ error: "Registration is currently closed" }), { status: 403, headers: { "Content-Type": "application/json" } });
+        }
         await env.DB.prepare("UPDATE ngu4th_members SET is_registered = 1, team = ?, last_registered_at = CURRENT_TIMESTAMP WHERE kinde_id = ?")
           .bind(team || null, kindeId).run();
         

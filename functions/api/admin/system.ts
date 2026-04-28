@@ -79,12 +79,12 @@ export const onRequest: PagesFunction<{
       }
 
       if (action === 'update_settings') {
-        const { location, description, show_rules, show_minigames, show_stamps, show_achievements, show_cards } = settings;
+        const { location, description, show_rules, show_minigames, show_stamps, show_achievements, show_cards, red_exponent, blue_exponent } = settings;
         await env.DB.prepare(`
           UPDATE ngu4th_games 
-          SET location = ?, description = ?, show_rules = ?, show_minigames = ?, show_stamps = ?, show_achievements = ?, show_cards = ?
+          SET location = ?, description = ?, show_rules = ?, show_minigames = ?, show_stamps = ?, show_achievements = ?, show_cards = ?, red_exponent = ?, blue_exponent = ?
           WHERE id = ?
-        `).bind(location, description, show_rules, show_minigames, show_stamps, show_achievements, show_cards, gameId).run();
+        `).bind(location, description, show_rules, show_minigames, show_stamps, show_achievements, show_cards, red_exponent || 1.0, blue_exponent || 1.0, gameId).run();
       }
 
       if (action === 'reset_all_achievements') {

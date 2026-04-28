@@ -5,17 +5,22 @@ export const onRequest: PagesFunction<{
 
   const stream = new ReadableStream({
     async start(controller) {
-      const sendState = async () => {
-        try {
-          // 1. Get active match ID
-          const stateRecord: any = await env.DB.prepare("SELECT value FROM ngu4th_system_state WHERE key = 'active_match_id'").first();
-          const activeMatchId = stateRecord?.value;
+          // 1. Get active match ID from system_config
+          const configRecord: any = await env.DB.prepare("SELECT value FROM ngu4th_system_config WHERE key = 'active_match_id'").first();
+          const activeMatchId = configRecord?.value;
 
-          // 2. Get active match details if exists
+          // 2. Get active game settings (for exponents)
+          const activeGame: any = await env.DB.prepare("SELECT red_exponent, blue_exponent FROM ngu4th_games WHERE status = 'active'").first();
+          const teamExponents = { 
+            red: activeGame?.red_exponent || 1.0, 
+            blue: activeGame?.blue_exponent || 1.0 
+          };
+
+          // 3. Get active match details if exists
           let activeMatch = null;
           if (activeMatchId) {
             activeMatch = await env.DB.prepare(`
-              SELECT m.*, r.username as red_name, b.username as blue_name
+              SELECT m.*, r.username as red_player_name, b.username as blue_player_name
               FROM ngu4th_matches m
               LEFT JOIN ngu4th_members r ON m.red_player_id = r.kinde_id
               LEFT JOIN ngu4th_members b ON m.blue_player_id = b.kinde_id
@@ -23,9 +28,9 @@ export const onRequest: PagesFunction<{
             `).bind(activeMatchId).first();
           }
 
-          // 3. Get team totals and exponents
+          // 4. Get team totals
           const totals: any = await env.DB.prepare(`
-            SELECT team, SUM(total_score) as sum FROM ngu4th_rounds GROUP BY team
+            SELECT team, SUM(total_score) as sum FROM ngu4th_rounds WHERE game_id = (SELECT id FROM ngu4th_games WHERE status = 'active') GROUP BY team
           `).all();
           
           const teamScores = { red: 0, blue: 0 };
@@ -34,18 +39,12 @@ export const onRequest: PagesFunction<{
             if (r.team === 'blue') teamScores.blue = r.sum;
           });
 
-          const exponents: any = await env.DB.prepare("SELECT key, value FROM ngu4th_system_state WHERE key LIKE '%_exponent'").all();
-          const teamExponents = { red: 1.0, blue: 1.0 };
-          exponents.results.forEach((e: any) => {
-            if (e.key === 'red_exponent') teamExponents.red = parseFloat(e.value) || 1.0;
-            if (e.key === 'blue_exponent') teamExponents.blue = parseFloat(e.value) || 1.0;
-          });
-
-          // 4. Get recent rounds with Tarot names
+          // 5. Get recent rounds with Tarot names
           const recentRounds = await env.DB.prepare(`
             SELECT r.*, m.username, c.name as tarot_name FROM ngu4th_rounds r
             JOIN ngu4th_members m ON r.player_id = m.kinde_id
             LEFT JOIN ngu4th_cards c ON r.tarot_id = c.id
+            WHERE r.game_id = (SELECT id FROM ngu4th_games WHERE status = 'active')
             ORDER BY r.created_at DESC LIMIT 5
           `).all();
 

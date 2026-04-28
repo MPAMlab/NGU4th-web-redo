@@ -455,6 +455,10 @@ export const AdminDashboard = () => {
                     <div className="space-y-4">
                        <div className="space-y-1"><label className="text-[8px] font-black uppercase text-slate-400">现场地点 (Location)</label><input name="location" defaultValue={activeGame.location} className={inputClass} /></div>
                        <div className="space-y-1"><label className="text-[8px] font-black uppercase text-slate-400">活动简介 (Description)</label><textarea name="description" defaultValue={activeGame.description} className={inputClass + " h-32 resize-none"} /></div>
+                       <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                          <div className="space-y-1"><label className="text-[8px] font-black uppercase text-red-500">红队基础指数 (Red EXP)</label><input name="red_exponent" type="number" step="0.01" defaultValue={(activeGame as any).red_exponent || 1.0} className={inputClass} /></div>
+                          <div className="space-y-1"><label className="text-[8px] font-black uppercase text-blue-500">蓝队基础指数 (Blue EXP)</label><input name="blue_exponent" type="number" step="0.01" defaultValue={(activeGame as any).blue_exponent || 1.0} className={inputClass} /></div>
+                       </div>
                     </div>
                     <div className="space-y-4">
                        <label className="text-[8px] font-black uppercase text-slate-400">模块可见性 (Visibility)</label>
