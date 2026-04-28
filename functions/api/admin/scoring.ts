@@ -79,15 +79,23 @@ export const onRequest: PagesFunction<{
             .bind(currentTeamExponent, activeGame.id).run();
         }
 
-        const jokerMultiplier = parseFloat(data.multiplier) || 1.0;
-        const totalMultiplier = jokerMultiplier * fakeMultiplier;
-        const baseScore = parseFloat(data.baseScore);
+        const jokerMultiplier = parseFloat(data.multiplier);
+        const safeJokerMultiplier = isNaN(jokerMultiplier) ? 1.0 : jokerMultiplier;
+        const totalMultiplier = safeJokerMultiplier * fakeMultiplier;
+        
+        const baseScoreInput = parseFloat(data.baseScore);
+        const baseScore = isNaN(baseScoreInput) ? 0.0 : baseScoreInput;
 
         // Use the UPDATED currentTeamExponent for the individual round's contribution calculation
         // Formula: (Total Base Sum so far) ^ currentTeamExponent * Product of Multipliers
         // Since we are inside commitRound, we'll store this round's state
-        const totalScorePlaceholder = Math.pow(baseScore, currentTeamExponent) * totalMultiplier; 
+        let totalScorePlaceholder = Math.pow(baseScore, currentTeamExponent) * totalMultiplier; 
         
+        // Safety: ensure database doesn't crash on Infinity/NaN
+        if (isNaN(totalScorePlaceholder) || !isFinite(totalScorePlaceholder)) {
+           totalScorePlaceholder = 0;
+        }
+
         await env.DB.prepare(`
           INSERT INTO ngu4th_rounds (match_id, player_id, team, round_number, base_score, multiplier, exponent, total_score, round_type, tarot_id, poker_hand, active_fake_cards, game_id)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

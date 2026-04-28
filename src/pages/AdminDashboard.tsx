@@ -678,69 +678,80 @@ export const AdminDashboard = () => {
            {!activeMatch ? (<div className="bg-white p-20 rounded-3xl border-4 border-dashed border-slate-100 text-center space-y-4 animate-pulse"><div className="text-4xl opacity-10">📡</div><h2 className="text-xl font-black uppercase italic tracking-widest opacity-20">Awaiting Active Match Link</h2></div>) : (
              <div className="space-y-6">
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-xl flex justify-between items-center border-x-4 border-indigo-600"><div className="space-y-1"><div className="text-[8px] font-black uppercase tracking-[0.4em] text-indigo-500 italic">🔴 DATA STREAM ACTIVE</div><h2 className="text-2xl font-black italic tracking-tighter uppercase leading-none text-white">{activeMatch.red_player_name} <span className="opacity-10 text-xs">VS</span> {activeMatch.blue_player_name}</h2></div><button onClick={() => handleSetActiveMatch(null)} className="bg-white text-slate-950 px-6 py-2.5 rounded-xl font-black uppercase text-[10px] italic border-b-4 border-slate-300 active:border-b-0 active:translate-y-1 transition-all">FINISH</button></div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                   {['red', 'blue'].map((team, idx) => {
-                      const isRound1 = activeMatch.round_1_status !== 'completed';
-                      const currentRoundType = isRound1 ? 'red_pick' : 'blue_pick';
-                      const isHome = (team === 'red' && isRound1) || (team === 'blue' && !isRound1);
-                      const player = team === 'red' ? redPlayer : bluePlayer;
-                      const useJoker = team === 'red' ? applyRedJoker : applyBlueJoker;
-                      const setUseJoker = team === 'red' ? setApplyRedJoker : setApplyBlueJoker;
-                      return (
-                        <div key={team} className={`space-y-3 ${(idx === 0 && activeMatch.round_1_status === 'completed') || (idx === 1 && activeMatch.round_2_status === 'completed') ? 'opacity-20 grayscale pointer-events-none scale-95 transition-all' : ''}`}><div className={`p-4 rounded-t-2xl ${team === 'red' ? 'bg-red-600' : 'bg-blue-600'} text-white text-center`}><h3 className="text-lg font-black italic uppercase leading-none">ROUND {isRound1 ? '1' : '2'}</h3><p className="text-[8px] font-black uppercase opacity-70 tracking-widest">{isRound1 ? "RED'S PICK" : "BLUE'S PICK"}</p></div>
-                           <form onSubmit={(e)=>handleCommitRound(e, currentRoundType)} className="bg-white p-6 rounded-b-2xl border-x border-b border-slate-200 shadow-sm space-y-6">
-                              <div className="space-y-6"><div className="flex justify-between items-center border-b pb-4"><h4 className={`font-black text-xl uppercase italic leading-none tracking-tighter ${team === 'red' ? 'text-red-600' : 'text-blue-600'}`}>{player?.username}</h4><Badge className={`px-4 py-1 rounded-lg font-black text-[8px] uppercase ${isHome ? (team === 'red' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white') : 'bg-slate-900 text-slate-500'}`}>{isHome ? 'HOME' : 'AWAY'}</Badge></div>
-                                 <div className="space-y-2"><label className="text-[8px] font-black uppercase opacity-40 tracking-widest block text-center italic">1. Base Score</label><input name={`${team}_base`} type="number" step="any" required placeholder="0.0" className="w-full text-center text-5xl font-black p-4 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:border-indigo-600" /></div>
-                                 <div className={`p-4 rounded-xl border transition-all space-y-4 ${isHome ? 'bg-indigo-50/20 border-indigo-100' : 'bg-slate-50 opacity-40 border-slate-200'}`}>
-                                    <div className="flex justify-between items-start">
-                                       <div className="flex-1">
-                                          <label className={`text-[8px] font-black uppercase tracking-widest ${isHome ? 'text-indigo-600 opacity-100' : 'opacity-40'}`}>
-                                             2. Joker: {player?.joker_name || 'NONE'}
-                                          </label>
+
+                <form onSubmit={(e)=>{
+                   const isRound1 = activeMatch.round_1_status !== 'completed';
+                   handleCommitRound(e, isRound1 ? 'red_pick' : 'blue_pick');
+                }} className="space-y-6">
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {['red', 'blue'].map((team, idx) => {
+                         const isRound1 = activeMatch.round_1_status !== 'completed';
+                         const isHome = (team === 'red' && isRound1) || (team === 'blue' && !isRound1);
+                         const player = team === 'red' ? redPlayer : bluePlayer;
+                         const useJoker = team === 'red' ? applyRedJoker : applyBlueJoker;
+                         const setUseJoker = team === 'red' ? setApplyRedJoker : setApplyBlueJoker;
+                         const teamFakeCards = team === 'red' ? redTeamFakeCards : blueTeamFakeCards;
+
+                         return (
+                           <div key={team} className={`space-y-3 ${(idx === 0 && activeMatch.round_1_status === 'completed') || (idx === 1 && activeMatch.round_2_status === 'completed') ? 'opacity-20 grayscale pointer-events-none scale-95 transition-all' : ''}`}>
+                              <div className={`p-4 rounded-t-2xl ${team === 'red' ? 'bg-red-600' : 'bg-blue-600'} text-white text-center`}><h3 className="text-lg font-black italic uppercase leading-none">{team.toUpperCase()} TEAM</h3><p className="text-[8px] font-black uppercase opacity-70 tracking-widest">{isHome ? "ACTIVE PICK" : "RESPONSE"}</p></div>
+                              <div className="bg-white p-6 rounded-b-2xl border-x border-b border-slate-200 shadow-sm space-y-6">
+                                 <div className="space-y-6"><div className="flex justify-between items-center border-b pb-4"><h4 className={`font-black text-xl uppercase italic leading-none tracking-tighter ${team === 'red' ? 'text-red-600' : 'text-blue-600'}`}>{player?.username}</h4><Badge className={`px-4 py-1 rounded-lg font-black text-[8px] uppercase ${isHome ? (team === 'red' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white') : 'bg-slate-900 text-slate-500'}`}>{isHome ? 'HOME' : 'AWAY'}</Badge></div>
+                                    <div className="space-y-2"><label className="text-[8px] font-black uppercase opacity-40 tracking-widest block text-center italic">1. Base Score</label><input name={`${team}_base`} type="number" step="any" required placeholder="0.0" className="w-full text-center text-5xl font-black p-4 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:border-indigo-600" /></div>
+                                    <div className={`p-4 rounded-xl border transition-all space-y-4 ${isHome ? 'bg-indigo-50/20 border-indigo-100' : 'bg-slate-50 opacity-40 border-slate-200'}`}>
+                                       <div className="flex justify-between items-start">
+                                          <div className="flex-1">
+                                             <label className={`text-[8px] font-black uppercase tracking-widest ${isHome ? 'text-indigo-600 opacity-100' : 'opacity-40'}`}>
+                                                2. Joker: {player?.joker_name || 'NONE'}
+                                             </label>
+                                          </div>
+                                          {player?.joker_card_id && (
+                                             <label className={`flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg border-b-2 transition-all ${isHome ? 'bg-indigo-600 text-white border-indigo-900 active:border-b-0 active:translate-y-0.5' : 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed'}`}>
+                                                <input 
+                                                   type="checkbox" 
+                                                   checked={useJoker} 
+                                                   disabled={!isHome}
+                                                   onChange={(e) => setUseJoker(e.target.checked)} 
+                                                   className="w-4 h-4" 
+                                                />
+                                                <span className="text-[8px] font-black uppercase italic">{isHome ? 'APPLY' : 'AWAY'}</span>
+                                             </label>
+                                          )}
                                        </div>
-                                       {player?.joker_card_id && (
-                                          <label className={`flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg border-b-2 transition-all ${isHome ? 'bg-indigo-600 text-white border-indigo-900 active:border-b-0 active:translate-y-0.5' : 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed'}`}>
-                                             <input 
-                                                type="checkbox" 
-                                                checked={useJoker} 
-                                                disabled={!isHome}
-                                                onChange={(e) => setUseJoker(e.target.checked)} 
-                                                className="w-4 h-4" 
-                                             />
-                                             <span className="text-[8px] font-black uppercase italic">{isHome ? 'APPLY' : 'AWAY'}</span>
-                                          </label>
-                                       )}
+                                       <div className="relative">
+                                         <input 
+                                            key={`${team}-${useJoker}-${player?.joker_card_id}-${player?.joker_multiplier}`}
+                                            name={`${team}_mult`} 
+                                            type="number" 
+                                            step="any" 
+                                            defaultValue={useJoker 
+                                               ? (player?.joker_is_variable ? "" : (player?.joker_multiplier || 1.5)) 
+                                               : "1.0"
+                                            }
+                                            placeholder={useJoker && player?.joker_is_variable ? "录入最终倍率..." : ""} 
+                                            readOnly={!useJoker || !player?.joker_is_variable} 
+                                            className={`w-full p-4 rounded-xl font-black text-4xl text-center outline-none transition-all ${
+                                               (useJoker && player?.joker_is_variable) 
+                                                  ? 'bg-white border-indigo-500 border-2 shadow-inner opacity-100' 
+                                                  : (useJoker ? 'bg-slate-100 text-slate-400 opacity-100' : 'bg-slate-100 text-slate-400 opacity-30')
+                                            }`} 
+                                         />
+                                       </div>
                                     </div>
-                                    <div className="relative">
-                                      <input 
-                                         key={`${team}-${useJoker}-${player?.joker_card_id}-${player?.joker_multiplier}`}
-                                         name={`${team}_mult`} 
-                                         type="number" 
-                                         step="any" 
-                                         defaultValue={useJoker 
-                                            ? (player?.joker_is_variable ? "" : (player?.joker_multiplier || 1.5)) 
-                                            : "1.0"
-                                         }
-                                         placeholder={useJoker && player?.joker_is_variable ? "录入最终倍率..." : ""} 
-                                         readOnly={!useJoker || !player?.joker_is_variable} 
-                                         className={`w-full p-4 rounded-xl font-black text-4xl text-center outline-none transition-all ${
-                                            (useJoker && player?.joker_is_variable) 
-                                               ? 'bg-white border-indigo-500 border-2 shadow-inner opacity-100' 
-                                               : (useJoker ? 'bg-slate-100 text-slate-400 opacity-100' : 'bg-slate-100 text-slate-400 opacity-30')
-                                         }`} 
-                                      />
-                                    </div>                                 </div>
-                                 <div className="grid grid-cols-2 gap-4"><div className="space-y-1"><label className="text-[7px] font-black uppercase opacity-40 block tracking-widest italic">3. Tarot</label><select name={`${team}_tarot`} className={selectClass}><option value="">None</option>{cardLibrary.filter(c=>c.type==='tarot').map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></div><div className="space-y-1"><label className="text-[7px] font-black uppercase opacity-40 block tracking-widest italic">4. Hand</label><select name={`${team}_hand`} className={selectClass}><option value="">Select Hand...</option>{HAND_TYPES_LIST.map(h => <option key={h} value={h}>{h}</option>)}</select></div></div>
-                                 <div className="bg-emerald-600/5 p-4 rounded-xl border-4 border-emerald-600/5 space-y-4 shadow-inner"><p className="text-[7px] font-black uppercase text-emerald-600 tracking-widest text-center italic opacity-60">5. Team Fake Cards</p><div className="grid grid-cols-2 gap-2">{(team === 'red' ? redTeamFakeCards : blueTeamFakeCards).map(f=><label key={f.id} className="flex items-center gap-2 cursor-pointer bg-white/80 p-2 rounded-lg border border-slate-100 shadow-sm"><input type="checkbox" name={`${team}_fake_cards`} value={f.card_id} className="w-4 h-4 accent-emerald-600" /><span className="text-[9px] font-black uppercase italic truncate leading-none">{f.card_name}</span></label>)}</div></div>
+                                    <div className="grid grid-cols-2 gap-4"><div className="space-y-1"><label className="text-[7px] font-black uppercase opacity-40 block tracking-widest italic">3. Tarot</label><select name={`${team}_tarot`} className={selectClass}><option value="">None</option>{cardLibrary.filter(c=>c.type==='tarot').map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></div><div className="space-y-1"><label className="text-[7px] font-black uppercase opacity-40 block tracking-widest italic">4. Hand</label><select name={`${team}_hand`} className={selectClass}><option value="">Select Hand...</option>{HAND_TYPES_LIST.map(h => <option key={h} value={h}>{h}</option>)}</select></div></div>
+                                    <div className="bg-emerald-600/5 p-4 rounded-xl border-4 border-emerald-600/5 space-y-4 shadow-inner"><p className="text-[7px] font-black uppercase text-emerald-600 tracking-widest text-center italic opacity-60">5. Team Fake Cards</p><div className="grid grid-cols-2 gap-2">{teamFakeCards.map(f=><label key={f.id} className="flex items-center gap-2 cursor-pointer bg-white/80 p-2 rounded-lg border border-slate-100 shadow-sm"><input type="checkbox" name={`${team}_fake_cards`} value={f.card_id} className="w-4 h-4 accent-emerald-600" /><span className="text-[9px] font-black uppercase italic truncate leading-none">{f.card_name}</span></label>)}</div></div>
+                                 </div>
                               </div>
-                              <button type="submit" className={`w-full ${team === 'red' ? 'bg-red-600 border-red-800' : 'bg-blue-600 border-blue-800'} text-white font-black py-6 rounded-2xl text-3xl uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all italic border-b-8 mt-4`}>COMMIT</button>
-                           </form>
-                        </div>
-                      )
-                   })}
-                </div>
-             </div>
-           )}
+                           </div>
+                         )
+                      })}
+                   </div>
+
+                   <button type="submit" className="w-full bg-slate-900 border-slate-700 text-white font-black py-8 rounded-3xl text-4xl uppercase tracking-[0.2em] shadow-2xl hover:bg-black hover:scale-[1.01] active:scale-[0.99] transition-all italic border-b-8 border-x-4">
+                      COMMIT ROUND {activeMatch.round_1_status !== 'completed' ? '1' : '2'}
+                   </button>
+                </form>
+             </div>           )}
         </div>
       )}
     </div>
