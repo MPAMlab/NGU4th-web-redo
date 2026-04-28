@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { 
   Award, Trophy, Zap, LogOut, Settings, LayoutDashboard, Calendar, Users, 
-  MapPin, ChevronRight, Star, User, BookOpen, Target, ShieldCheck, Activity, Swords, HelpCircle, QrCode, Scan, Camera, X
+  MapPin, ChevronRight, Star, User, BookOpen, Target, ShieldCheck, Activity, Swords, HelpCircle, QrCode, Scan, Camera, X, Upload
 } from 'lucide-react';
 import { RegistrationPage } from './Registration';
 import { QRCodeSVG } from 'qrcode.react';
@@ -20,6 +20,7 @@ interface User {
   email: string;
   role: string;
   kinde_id: string;
+  avatar_url?: string;
 }
 
 interface Minigame {
@@ -113,13 +114,15 @@ interface RankingEntry {
   achievement_count: number;
 }
 
-export const DashboardPage = ({ user, achievements, activeGame }: { user: User, achievements: Achievement[], activeGame: GameSettings | null }) => {
+export const DashboardPage = ({ user: initialUser, achievements, activeGame }: { user: User, achievements: Achievement[], activeGame: GameSettings | null }) => {
+  const [user, setUser] = useState(initialUser);
   const [minigames, setMinigames] = useState<Minigame[]>([]);
   const [stamps, setStamps] = useState<Stamp[]>([]);
   const [inventory, setInventory] = useState<Card[]>([]);
   const [allCards, setAllCards] = useState<Card[]>([]);
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'challenges' | 'achievements' | 'stamps' | 'inventory' | 'profile'>('home');
   const [inventorySubTab, setInventorySubTab] = useState<'team' | 'gallery'>('team');
   const [manualScanId, setManualScanId] = useState('');
@@ -151,6 +154,33 @@ export const DashboardPage = ({ user, achievements, activeGame }: { user: User, 
       const res = await fetch('/api/minigames', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: joined ? 'leave' : 'join', minigameId: id }) });
       if (res.ok) fetchData();
     } finally { setLoading(false); }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/auth/avatar', {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        const result = await res.json();
+        setUser(prev => ({ ...prev, avatar_url: result.avatarUrl }));
+      } else {
+        const err = await res.json();
+        alert(err.error || "上传失败");
+      }
+    } catch (err) {
+      alert("网络错误");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleCollectStamp = async (id: string) => {
@@ -392,7 +422,45 @@ export const DashboardPage = ({ user, achievements, activeGame }: { user: User, 
         {activeTab === 'profile' && (
           <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
              <div className="flex items-center gap-4 px-2"><div className="w-12 h-12 bg-slate-200 text-slate-700 rounded-2xl flex items-center justify-center shadow-lg shadow-slate-100"><User size={24} fill="currentColor" /></div><div><h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">个人身份与报名信息</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Identification Bureau</p></div></div>
-             <div className="bg-white rounded-[3rem] border-2 border-slate-100 shadow-2xl overflow-hidden"><div className="bg-slate-900 p-8 flex justify-between items-center text-white relative"><div className="space-y-1 relative z-10"><p className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.4em]">Personal Data</p><h3 className="text-4xl font-black italic uppercase tracking-tighter">{user.username}</h3><p className="text-xs font-bold opacity-40 lowercase">{user.email}</p></div><div className="relative z-10 flex gap-2"><Badge variant="outline" className="border-indigo-500/50 text-indigo-400 uppercase">{user.role}</Badge><a href="/api/auth/logout" className="p-3 bg-red-600/20 text-red-500 border border-red-600/30 rounded-xl hover:bg-red-600 hover:text-white transition-all"><LogOut size={16}/></a></div></div><div className="p-8"><RegistrationPage /></div></div>
+             <div className="bg-white rounded-[3rem] border-2 border-slate-100 shadow-2xl overflow-hidden">
+                <div className="bg-slate-900 p-8 flex justify-between items-center text-white relative">
+                   <div className="absolute inset-0 opacity-10 pointer-events-none">
+                      <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 rounded-full blur-3xl -mr-32 -mt-32"></div>
+                   </div>
+                   <div className="flex items-center gap-6 relative z-10">
+                      <div className="relative group cursor-pointer" onClick={() => document.getElementById('avatar-input')?.click()}>
+                         <div className="w-24 h-24 rounded-[2rem] bg-slate-800 border-4 border-white/10 overflow-hidden shadow-2xl transition-all group-hover:scale-105 group-hover:border-indigo-500/50">
+                            {user.avatar_url ? (
+                               <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                               <div className="w-full h-full flex items-center justify-center text-slate-500"><User size={40} /></div>
+                            )}
+                            <div className={`absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${uploading ? 'opacity-100' : ''}`}>
+                               {uploading ? (
+                                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                               ) : (
+                                  <>
+                                     <Upload size={20} className="text-white mb-1" />
+                                     <span className="text-[8px] font-black uppercase">Update</span>
+                                  </>
+                                )}
+                            </div>
+                         </div>
+                         <input id="avatar-input" type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
+                      </div>
+                      <div className="space-y-1">
+                         <p className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.4em]">Personal Data</p>
+                         <h3 className="text-4xl font-black italic uppercase tracking-tighter">{user.username}</h3>
+                         <p className="text-xs font-bold opacity-40 lowercase">{user.email}</p>
+                      </div>
+                   </div>
+                   <div className="relative z-10 flex flex-col items-end gap-2">
+                      <Badge variant="outline" className="border-indigo-500/50 text-indigo-400 uppercase">{user.role}</Badge>
+                      <a href="/api/auth/logout" className="p-3 bg-red-600/20 text-red-500 border border-red-600/30 rounded-xl hover:bg-red-600 hover:text-white transition-all"><LogOut size={16}/></a>
+                   </div>
+                </div>
+                <div className="p-8"><RegistrationPage /></div>
+             </div>
           </div>
         )}
       </div>

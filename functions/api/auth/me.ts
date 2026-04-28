@@ -19,9 +19,23 @@ export const onRequest: PagesFunction<{
     const payload = JSON.parse(atob(base64));
     const kindeId = payload.sub;
 
-    const user = await env.DB.prepare("SELECT * FROM ngu4th_members WHERE kinde_id = ?")
+    let user: any = await env.DB.prepare("SELECT * FROM ngu4th_members WHERE kinde_id = ?")
       .bind(kindeId)
       .first();
+
+    if (user && !user.avatar_url) {
+      try {
+        const legacy: any = await env.DB.prepare("SELECT avatar_url FROM members WHERE kinde_user_id = ? OR kinde_id = ?")
+          .bind(kindeId, kindeId).first();
+        if (legacy?.avatar_url) {
+          await env.DB.prepare("UPDATE ngu4th_members SET avatar_url = ? WHERE kinde_id = ?")
+            .bind(legacy.avatar_url, kindeId).run();
+          user.avatar_url = legacy.avatar_url;
+        }
+      } catch (e) {
+        // legacy table might not exist
+      }
+    }
 
     if (user) {
       const { checkAchievements } = await import("../../lib/achievements");
