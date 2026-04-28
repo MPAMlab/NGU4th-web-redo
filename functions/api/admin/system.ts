@@ -63,7 +63,7 @@ export const onRequest: PagesFunction<{
 
       if (key && value !== undefined) {
         await env.DB.prepare("INSERT OR REPLACE INTO ngu4th_system_config (key, value) VALUES (?, ?)")
-          .bind(key, value.toString()).run();
+          .bind(key, value === null ? null : value.toString()).run();
       }
 
       if (action === 'create_game') {
