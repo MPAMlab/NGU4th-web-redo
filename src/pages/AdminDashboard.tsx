@@ -292,10 +292,8 @@ export const AdminDashboard = () => {
 
   const activeMatch = matches.find(m => m.id.toString() === systemState.active_match_id);
   const activeGame = games.find(g => g.status === 'active');
-  const redPlayer = members.find(m => m.kinde_id === activeMatch?.red_player_id);
-  const bluePlayer = members.find(m => m.kinde_id === activeMatch?.blue_player_id);
-  const redTeamFakeCards = inventory.filter(i => i.owner_id === 'red' && i.card_type === 'fake');
-  const blueTeamFakeCards = inventory.filter(i => i.owner_id === 'blue' && i.card_type === 'fake');
+  const redTeamFakeCards = Array.from(new Map(inventory.filter(i => i.owner_id === 'red' && i.card_type === 'fake').map(item => [item.card_id, item])).values());
+  const blueTeamFakeCards = Array.from(new Map(inventory.filter(i => i.owner_id === 'blue' && i.card_type === 'fake').map(item => [item.card_id, item])).values());
   const filteredLibrary = cardLibrary.filter(c => libraryFilter === 'all' || c.type === libraryFilter);
   const targetMember = members.find(m => m.kinde_id === selectedUser);
   const earnedAchs = userAchievements.filter(ua => ua.kinde_id === selectedUser);
@@ -679,7 +677,7 @@ export const AdminDashboard = () => {
              <div className="space-y-6">
                 <div className="bg-slate-900 p-6 rounded-2xl shadow-xl flex justify-between items-center border-x-4 border-indigo-600"><div className="space-y-1"><div className="text-[8px] font-black uppercase tracking-[0.4em] text-indigo-500 italic">🔴 DATA STREAM ACTIVE</div><h2 className="text-2xl font-black italic tracking-tighter uppercase leading-none text-white">{activeMatch.red_player_name} <span className="opacity-10 text-xs">VS</span> {activeMatch.blue_player_name}</h2></div><button onClick={() => handleSetActiveMatch(null)} className="bg-white text-slate-950 px-6 py-2.5 rounded-xl font-black uppercase text-[10px] italic border-b-4 border-slate-300 active:border-b-0 active:translate-y-1 transition-all">FINISH</button></div>
 
-                <form onSubmit={(e)=>{
+                <form key={activeMatch.round_1_status} onSubmit={(e)=>{
                    const isRound1 = activeMatch.round_1_status !== 'completed';
                    handleCommitRound(e, isRound1 ? 'red_pick' : 'blue_pick');
                 }} className="space-y-6">
@@ -693,12 +691,12 @@ export const AdminDashboard = () => {
                          const teamFakeCards = team === 'red' ? redTeamFakeCards : blueTeamFakeCards;
 
                          return (
-                           <div key={team} className={`space-y-3 ${(idx === 0 && activeMatch.round_1_status === 'completed') || (idx === 1 && activeMatch.round_2_status === 'completed') ? 'opacity-20 grayscale pointer-events-none scale-95 transition-all' : ''}`}>
+                           <div key={team} className={`space-y-3 ${activeMatch.round_2_status === 'completed' ? 'opacity-20 grayscale pointer-events-none scale-95 transition-all' : ''}`}>
                               <div className={`p-4 rounded-t-2xl ${team === 'red' ? 'bg-red-600' : 'bg-blue-600'} text-white text-center`}><h3 className="text-lg font-black italic uppercase leading-none">{team.toUpperCase()} TEAM</h3><p className="text-[8px] font-black uppercase opacity-70 tracking-widest">{isHome ? "ACTIVE PICK" : "RESPONSE"}</p></div>
                               <div className="bg-white p-6 rounded-b-2xl border-x border-b border-slate-200 shadow-sm space-y-6">
                                  <div className="space-y-6"><div className="flex justify-between items-center border-b pb-4"><h4 className={`font-black text-xl uppercase italic leading-none tracking-tighter ${team === 'red' ? 'text-red-600' : 'text-blue-600'}`}>{player?.username}</h4><Badge className={`px-4 py-1 rounded-lg font-black text-[8px] uppercase ${isHome ? (team === 'red' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white') : 'bg-slate-900 text-slate-500'}`}>{isHome ? 'HOME' : 'AWAY'}</Badge></div>
                                     <div className="space-y-2"><label className="text-[8px] font-black uppercase opacity-40 tracking-widest block text-center italic">1. Base Score</label><input name={`${team}_base`} type="number" step="any" required placeholder="0.0" className="w-full text-center text-5xl font-black p-4 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:border-indigo-600" /></div>
-                                    <div className={`p-4 rounded-xl border transition-all space-y-4 ${isHome ? 'bg-indigo-50/20 border-indigo-100' : 'bg-slate-50 opacity-40 border-slate-200'}`}>
+                                    <div className={`p-4 rounded-xl border transition-all space-y-4 ${isHome ? 'bg-indigo-50/20 border-indigo-100' : 'bg-slate-50 border-slate-200'}`}>
                                        <div className="flex justify-between items-start">
                                           <div className="flex-1">
                                              <label className={`text-[8px] font-black uppercase tracking-widest ${isHome ? 'text-indigo-600 opacity-100' : 'opacity-40'}`}>
@@ -706,15 +704,14 @@ export const AdminDashboard = () => {
                                              </label>
                                           </div>
                                           {player?.joker_card_id && (
-                                             <label className={`flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg border-b-2 transition-all ${isHome ? 'bg-indigo-600 text-white border-indigo-900 active:border-b-0 active:translate-y-0.5' : 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed'}`}>
+                                             <label className={`flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg border-b-2 transition-all ${isHome ? 'bg-indigo-600 text-white border-indigo-900 active:border-b-0 active:translate-y-0.5' : 'bg-white border-slate-200'}`}>
                                                 <input 
                                                    type="checkbox" 
                                                    checked={useJoker} 
-                                                   disabled={!isHome}
                                                    onChange={(e) => setUseJoker(e.target.checked)} 
                                                    className="w-4 h-4" 
                                                 />
-                                                <span className="text-[8px] font-black uppercase italic">{isHome ? 'APPLY' : 'AWAY'}</span>
+                                                <span className="text-[8px] font-black uppercase italic">APPLY</span>
                                              </label>
                                           )}
                                        </div>
@@ -747,8 +744,15 @@ export const AdminDashboard = () => {
                       })}
                    </div>
 
-                   <button type="submit" className="w-full bg-slate-900 border-slate-700 text-white font-black py-8 rounded-3xl text-4xl uppercase tracking-[0.2em] shadow-2xl hover:bg-black hover:scale-[1.01] active:scale-[0.99] transition-all italic border-b-8 border-x-4">
-                      COMMIT ROUND {activeMatch.round_1_status !== 'completed' ? '1' : '2'}
+                   <button 
+                      type="submit" 
+                      disabled={activeMatch.round_2_status === 'completed'}
+                      className="w-full bg-slate-900 border-slate-700 text-white font-black py-8 rounded-3xl text-4xl uppercase tracking-[0.2em] shadow-2xl hover:bg-black hover:scale-[1.01] active:scale-[0.99] transition-all italic border-b-8 border-x-4 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
+                   >
+                      {activeMatch.round_2_status === 'completed' 
+                         ? 'Match Completed' 
+                         : `COMMIT ROUND ${activeMatch.round_1_status !== 'completed' ? '1' : '2'}`
+                      }
                    </button>
                 </form>
              </div>           )}

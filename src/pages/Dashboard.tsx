@@ -244,8 +244,7 @@ export const DashboardPage = ({ user, achievements, activeGame }: { user: User, 
                          </div>
                          <p className="text-sm font-bold text-slate-400 leading-relaxed italic border-l-4 border-purple-500 pl-4">{g.short_desc}</p>
                          <div className="flex gap-6 mt-4">
-                            <div className="flex flex-col"><span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">剩余席位</span><span className="text-lg font-black italic tabular-nums">{g.participant_count} / {g.max_players}</span></div>
-                            <div className="flex flex-col"><span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">优胜奖励</span><span className="text-lg font-black italic text-purple-600 uppercase">{g.fake_card_name || '???'}</span></div>
+                            <div className="flex flex-col"><span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">已报名人数</span><span className="text-lg font-black italic tabular-nums">{g.participant_count} / {g.max_players}</span></div>                            <div className="flex flex-col"><span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">优胜奖励</span><span className="text-lg font-black italic text-purple-600 uppercase">{g.fake_card_name || '???'}</span></div>
                          </div>
                       </div>
                       <button 

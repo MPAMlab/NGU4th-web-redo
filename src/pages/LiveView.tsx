@@ -39,8 +39,8 @@ export const LiveView = () => {
   
   // Calculate Final Scores: (BaseSum * 1) ^ Exponent
   // (We use a multiplier of 1 here as the individual round totals already include their specific multipliers)
-  const finalRed = Math.pow(data.teamScores.red, data.teamExponents.red);
-  const finalBlue = Math.pow(data.teamScores.blue, data.teamExponents.blue);
+  const finalRed = data.teamScores.red;
+  const finalBlue = data.teamScores.blue;
   
   const currentProgress = (finalRed * finalBlue);
   const progressPercent = Math.min(100, (currentProgress / goal) * 100);
@@ -93,7 +93,7 @@ export const LiveView = () => {
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center drop-shadow-2xl">
             <span className="font-black text-5xl tabular-nums tracking-tighter italic">
-              {currentProgress.toLocaleString()} / {goal.toLocaleString()}
+              {Math.round(currentProgress).toLocaleString()} / {goal.toLocaleString()}
             </span>
             <span className="text-[10px] font-bold opacity-30 uppercase tracking-[1em] mt-2">Team Red * Team Blue</span>
           </div>
@@ -122,8 +122,8 @@ export const LiveView = () => {
                   </div>
                 </div>
                 <div className="flex gap-10 font-mono text-[10px] text-neutral-400 uppercase tracking-tighter">
-                  <span className="bg-white/5 px-3 py-1 rounded-lg">基础分: {round.base_score}</span>
-                  <span className="bg-white/5 px-3 py-1 rounded-lg">倍率: {round.multiplier}x</span>
+                  <span className="bg-white/5 px-3 py-1 rounded-lg">基础分: {Math.floor(round.base_score)}</span>
+                  <span className="bg-white/5 px-3 py-1 rounded-lg">倍率: {round.multiplier.toFixed(1)}x</span>
                   {round.tarot_name && <span className="text-primary font-black italic">塔罗牌: {round.tarot_name}</span>}
                 </div>
                 <div className="font-black text-2xl text-green-400 tabular-nums drop-shadow-lg">+{Math.round(round.total_score).toLocaleString()}</div>
