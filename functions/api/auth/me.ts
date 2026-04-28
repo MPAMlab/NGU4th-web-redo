@@ -24,7 +24,7 @@ export const onRequest: PagesFunction<{
       .first();
 
     if (user) {
-      const { checkAchievements } = await import("../lib/achievements");
+      const { checkAchievements } = await import("../../lib/achievements");
       await checkAchievements(env.DB, kindeId, { type: 'login' });
     }
 

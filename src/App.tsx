@@ -20,13 +20,13 @@ const Badge = ({ children, className, variant = 'default' }: any) => {
 };
 
 const HAND_TYPES = [
-  { name: '五条 (Five of a Kind)', desc: '5张相同点数的数字牌', examples: ['10x5', '8x5'], color: 'bg-red-500' },
-  { name: '四条', desc: '4张相同点数的数字牌', examples: ['9x4', '2x4'], color: 'bg-orange-500' },
-  { name: '葫芦 (Full House)', desc: '三张相同点数 + 一对相同点数', examples: ['7x3 + 3x2'], color: 'bg-amber-500' },
-  { name: '同花 (Flush)', desc: '五张花色相同的牌 (在该比赛中为顺次点数)', examples: ['1,2,3,4,5'], color: 'bg-lime-500' },
-  { name: '三条', desc: '3张相同点数的数字牌', examples: ['8x3', '5x3'], color: 'bg-green-500' },
-  { name: '两对', desc: '两组相同点数的对子', examples: ['6x2 + 4x2'], color: 'bg-emerald-500' },
-  { name: '对子', desc: '2张相同点数的数字牌', examples: ['9x2', '3x2'], color: 'bg-teal-500' },
+  { name: '同数 (X of a Kind)', desc: '大于5张点数相同的数字牌', examples: ['10x6', '5x7'], color: 'bg-red-600' },
+  { name: '五条 (Five of a Kind)', desc: '5张点数相同的数字牌', examples: ['9x5', '2x5'], color: 'bg-orange-600' },
+  { name: '四条', desc: '4张点数相同的数字牌', examples: ['8x4', '1x4'], color: 'bg-amber-600' },
+  { name: '葫芦 (Full House)', desc: '三张相同点数 + 一对相同点数', examples: ['7x3 + 3x2'], color: 'bg-lime-600' },
+  { name: '顺子 (Straight)', desc: '大于等于5张点数连续的数字牌', examples: ['1,2,3,4,5', '3,4,5,6,7,8'], color: 'bg-green-600' },
+  { name: '控分大师 (Score Master)', desc: '结算时两张私牌的点数之和等于 0', examples: ['-5 + 5'], color: 'bg-emerald-600' },
+  { name: '三条/两对/对子', desc: '基础扑克组合', examples: ['8x3', '2x2+4x2', '9x2'], color: 'bg-teal-600' },
   { name: '高牌', desc: '单张最高点数的数字牌', examples: ['10', '7'], color: 'bg-slate-400' },
 ];
 
@@ -152,16 +152,20 @@ function App() {
                            <div className="bg-slate-900 text-white p-10 rounded-[3rem] shadow-2xl relative overflow-hidden border-b-[12px] border-indigo-600">
                               <div className="space-y-4 mb-8">
                                  <h3 className="font-black text-[10px] uppercase text-indigo-400 tracking-[0.3em] opacity-60">Tactical Formula</h3>
-                                 <p className="text-3xl font-black tracking-tighter italic leading-tight">Total = (Base * Joker) ^ EXP</p>
+                                 <p className="text-3xl font-black tracking-tighter italic leading-tight">Total = (ΣBase ^ EXP) * ΠMult</p>
                               </div>
                               <div className="space-y-6 text-sm font-bold text-slate-400">
                                  <div className="space-y-1 border-l-4 border-indigo-500 pl-6">
-                                    <p className="text-white uppercase flex items-center gap-2 tracking-widest"><Hash size={16} /> 牌型基础分</p>
-                                    <p className="text-xs opacity-60">基于你打出的扑克牌型计算出的初始分值</p>
+                                    <p className="text-white uppercase flex items-center gap-2 tracking-widest"><Hash size={16} /> 累积基础分</p>
+                                    <p className="text-xs opacity-60">本赛季该队获得的所有基础分之和</p>
                                  </div>
                                  <div className="space-y-1 border-l-4 border-indigo-500 pl-6">
-                                    <p className="text-white uppercase flex items-center gap-2 tracking-widest"><Zap size={16} fill="currentColor" /> 小丑牌倍率</p>
-                                    <p className="text-xs opacity-60">每名选手的永久加成，仅在主场选曲轮次生效</p>
+                                    <p className="text-white uppercase flex items-center gap-2 tracking-widest"><Zap size={16} fill="currentColor" /> 连乘倍率</p>
+                                    <p className="text-xs opacity-60">小丑牌、塔罗牌和假卡提供的翻倍奖励</p>
+                                 </div>
+                                 <div className="space-y-1 border-l-4 border-indigo-500 pl-6">
+                                    <p className="text-white uppercase flex items-center gap-2 tracking-widest"><Star size={16} className="text-amber-500" /> 指数加成 EXP</p>
+                                    <p className="text-xs opacity-60">卡牌提供的指数奖励，将跨回合永久累积</p>
                                  </div>
                               </div>
                            </div>
