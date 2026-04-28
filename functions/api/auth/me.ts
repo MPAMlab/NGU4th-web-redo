@@ -10,7 +10,13 @@ export const onRequest: PagesFunction<{
 
   const idToken = match[1];
   try {
-    const payload = JSON.parse(atob(idToken.split(".")[1]));
+    // 🛠️ Robust JWT Decoding with padding fix
+    const payloadPart = idToken.split(".")[1];
+    let base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4 !== 0) {
+      base64 += '=';
+    }
+    const payload = JSON.parse(atob(base64));
     const kindeId = payload.sub;
 
     const user = await env.DB.prepare("SELECT * FROM ngu4th_members WHERE kinde_id = ?")
@@ -27,6 +33,9 @@ export const onRequest: PagesFunction<{
       headers: { "Content-Type": "application/json" }
     });
   } catch (e) {
-    return new Response(JSON.stringify({ user: null, error: "Invalid token" }), { status: 401 });
+    return new Response(JSON.stringify({ user: null, error: "Invalid token", details: (e as Error).message }), { 
+      status: 401,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 };
