@@ -54,7 +54,7 @@ export const LiveView = () => {
         <div className="flex flex-col">
           <div className="flex items-center gap-3">
              <span className="text-red-500 font-black tracking-tighter text-2xl uppercase italic">红队当前输出 RED FORCE</span>
-             {data.teamExponents.red > 1 && <span className="bg-red-600 text-[10px] font-black px-2 py-0.5 rounded uppercase shadow-lg">EXP ^{data.teamExponents.red}</span>}
+             {data.teamExponents.red > 1 && <span className="bg-red-600 text-[10px] font-black px-2 py-0.5 rounded uppercase shadow-lg">EXP ^{data.teamExponents.red.toFixed(4)}</span>}
           </div>
           <span className="text-8xl font-black tabular-nums tracking-tighter drop-shadow-[0_0_20px_rgba(220,38,38,0.3)]">
             {Math.round(finalRed).toLocaleString()}
@@ -72,7 +72,7 @@ export const LiveView = () => {
 
         <div className="flex flex-col items-end">
           <div className="flex items-center gap-3">
-             {data.teamExponents.blue > 1 && <span className="bg-blue-600 text-[10px] font-black px-2 py-0.5 rounded uppercase shadow-lg">EXP ^{data.teamExponents.blue}</span>}
+             {data.teamExponents.blue > 1 && <span className="bg-blue-600 text-[10px] font-black px-2 py-0.5 rounded uppercase shadow-lg">EXP ^{data.teamExponents.blue.toFixed(4)}</span>}
              <span className="text-blue-500 font-black tracking-tighter text-2xl uppercase italic">蓝队当前输出 BLUE FORCE</span>
           </div>
           <span className="text-8xl font-black tabular-nums tracking-tighter drop-shadow-[0_0_20px_rgba(37,99,235,0.3)]">

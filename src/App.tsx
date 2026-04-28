@@ -4,7 +4,8 @@ import { RegistrationPage } from './pages/Registration'
 import { DashboardPage } from './pages/Dashboard'
 import { AdminDashboard } from './pages/AdminDashboard'
 import { LiveView } from './pages/LiveView'
-import { Trophy, Swords, Zap, LogIn, MapPin, Star, BookOpen, Info, Hash, Activity, Users } from 'lucide-react'
+import { MatchHistory } from './pages/MatchHistory'
+import { Trophy, Swords, Zap, LogIn, MapPin, Star, BookOpen, Info, Hash, Activity, Users, History } from 'lucide-react'
 import { AchievementToast, Achievement } from './components/AchievementToast'
 
 const Badge = ({ children, className, variant = 'default' }: any) => {
@@ -125,6 +126,12 @@ function App() {
                          >
                            <Activity size={24} /> 实时大屏
                          </a>
+                         <a 
+                           href="/history" 
+                           className="bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white px-10 py-5 rounded-[2rem] font-black text-xl uppercase italic tracking-tighter transition-all flex items-center gap-3 border border-indigo-500/30"
+                         >
+                           <History size={24} /> 档案库 ARCHIVES
+                         </a>
                       </div>
                    </div>
                    <div className="absolute top-0 right-0 -mr-32 -mt-32 w-[30rem] h-[30rem] bg-indigo-600/20 rounded-full blur-[120px] animate-pulse"></div>
@@ -203,6 +210,7 @@ function App() {
             ) : <Navigate to="/dashboard" />
           } />
           <Route path="/live" element={<LiveView />} />
+          <Route path="/history" element={<MatchHistory />} />
         </Routes>
       </div>
     </Router>
