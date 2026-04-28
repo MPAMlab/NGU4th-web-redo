@@ -692,17 +692,35 @@ export const AdminDashboard = () => {
                               <div className="space-y-6"><div className="flex justify-between items-center border-b pb-4"><h4 className={`font-black text-xl uppercase italic leading-none tracking-tighter ${team === 'red' ? 'text-red-600' : 'text-blue-600'}`}>{player?.username}</h4><Badge className={`px-4 py-1 rounded-lg font-black text-[8px] uppercase ${isHome ? (team === 'red' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white') : 'bg-slate-900 text-slate-500'}`}>{isHome ? 'HOME' : 'AWAY'}</Badge></div>
                                  <div className="space-y-2"><label className="text-[8px] font-black uppercase opacity-40 tracking-widest block text-center italic">1. Base Score</label><input name={`${team}_base`} type="number" step="any" required placeholder="0.0" className="w-full text-center text-5xl font-black p-4 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:border-indigo-600" /></div>
                                  <div className={`p-4 rounded-xl border transition-all space-y-4 ${isHome ? 'bg-indigo-50/20 border-indigo-100' : 'bg-slate-50 opacity-40 border-slate-200'}`}>
-                                    <div className="flex justify-between items-start"><div className="flex-1"><label className={`text-[8px] font-black uppercase tracking-widest ${isHome ? 'text-indigo-600 opacity-100' : 'opacity-40'}`}>2. Joker: {player?.joker_name || 'NONE'}</label></div>{isHome && player?.joker_card_id && <label className="flex items-center gap-2 cursor-pointer bg-indigo-600 text-white px-3 py-1.5 rounded-lg border-b-2 border-indigo-900 active:border-b-0 active:translate-y-0.5"><input type="checkbox" checked={useJoker} onChange={(e)=>setUseJoker(e.target.checked)} className="w-4 h-4" /><span className="text-[8px] font-black uppercase italic">APPLY</span></label>}</div>
+                                    <div className="flex justify-between items-start">
+                                       <div className="flex-1">
+                                          <label className={`text-[8px] font-black uppercase tracking-widest ${isHome ? 'text-indigo-600 opacity-100' : 'opacity-40'}`}>
+                                             2. Joker: {player?.joker_name || 'NONE'}
+                                          </label>
+                                       </div>
+                                       {player?.joker_card_id && (
+                                          <label className={`flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg border-b-2 transition-all ${isHome ? 'bg-indigo-600 text-white border-indigo-900 active:border-b-0 active:translate-y-0.5' : 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed'}`}>
+                                             <input 
+                                                type="checkbox" 
+                                                checked={useJoker} 
+                                                disabled={!isHome}
+                                                onChange={(e) => setUseJoker(e.target.checked)} 
+                                                className="w-4 h-4" 
+                                             />
+                                             <span className="text-[8px] font-black uppercase italic">{isHome ? 'APPLY' : 'AWAY'}</span>
+                                          </label>
+                                       )}
+                                    </div>
                                     <div className="relative">
                                       <input 
+                                         key={`${team}-${useJoker}-${player?.joker_card_id}-${player?.joker_multiplier}`}
                                          name={`${team}_mult`} 
                                          type="number" 
                                          step="any" 
-                                         value={useJoker 
-                                            ? (player?.joker_is_variable ? undefined : (player?.joker_multiplier || 1.5)) 
+                                         defaultValue={useJoker 
+                                            ? (player?.joker_is_variable ? "" : (player?.joker_multiplier || 1.5)) 
                                             : "1.0"
                                          }
-                                         defaultValue={useJoker && player?.joker_is_variable ? "" : undefined}
                                          placeholder={useJoker && player?.joker_is_variable ? "录入最终倍率..." : ""} 
                                          readOnly={!useJoker || !player?.joker_is_variable} 
                                          className={`w-full p-4 rounded-xl font-black text-4xl text-center outline-none transition-all ${
