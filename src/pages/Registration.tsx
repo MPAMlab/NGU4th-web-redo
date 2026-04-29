@@ -68,92 +68,92 @@ export const RegistrationPage = () => {
   const blueTeam = data.publicRoster.filter(p => p.team === 'blue');
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-10">
-      <div className="bg-card rounded-lg shadow-lg p-6 border">
-        <h2 className="text-3xl font-black mb-6 tracking-tight">NGU4th 比赛报名</h2>
+    <div className="max-w-4xl mx-auto p-2 md:p-6 space-y-6 md:space-y-10">
+      <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg p-5 md:p-8 border border-slate-100">
+        <h2 className="text-2xl md:text-3xl font-black mb-4 md:mb-6 tracking-tight text-slate-900 italic uppercase">比赛报名 HUB</h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          <div className="space-y-2">
-            <p className="text-sm uppercase tracking-widest text-muted-foreground font-bold">比赛信息</p>
-            <p><strong>地点：</strong> 郑州某处</p>
-            <p><strong>时间：</strong> 2026年5月初</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mb-6 md:mb-8">
+          <div className="space-y-1 md:space-y-2">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-black">Event Information</p>
+            <p className="text-sm"><strong>地点：</strong> 郑州现场</p>
+            <p className="text-sm"><strong>时间：</strong> 2026年5月初</p>
             {!data.registrationOpen && (
-              <p className="text-destructive font-bold text-sm bg-destructive/10 inline-block px-2 py-1 rounded">⚠️ 报名暂未开放或已结束</p>
+              <p className="text-rose-600 font-bold text-[10px] bg-rose-50 inline-block px-3 py-1 rounded-full mt-2">⚠️ 报名暂未开放</p>
             )}
           </div>
-          <div className="space-y-2 text-right md:text-left">
-            <p className="text-sm uppercase tracking-widest text-muted-foreground font-bold">我的状态</p>
-            <p className="text-lg">
+          <div className="space-y-1 md:space-y-2 text-left">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-black">My Status</p>
+            <p className="text-base md:text-lg">
               {data.currentUser?.is_registered ? (
-                <span className="text-primary font-bold">✅ 已报名 ({data.currentUser.team === 'red' ? '🔴 红队' : '🔵 蓝队'})</span>
+                <span className="text-indigo-600 font-black italic">✅ 已报名 ({data.currentUser.team === 'red' ? '🔴 红队' : '🔵 蓝队'})</span>
               ) : (
-                <span className="text-muted-foreground">❌ 未报名</span>
+                <span className="text-slate-400 font-bold italic">❌ 未报名</span>
               )}
             </p>
           </div>
         </div>
         
-        {error && <p className="bg-destructive/10 text-destructive p-3 rounded-md text-sm mb-6">{error}</p>}
+        {error && <p className="bg-rose-50 text-rose-600 p-3 rounded-xl text-[10px] font-bold mb-6 border border-rose-100">{error}</p>}
 
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-3">
           {!data.currentUser?.is_registered ? (
             <>
               <button 
                 onClick={() => handleAction('register', 'red')}
                 disabled={loading || !data.registrationOpen}
-                className="flex-1 bg-red-600 text-white font-bold py-4 rounded-xl hover:bg-red-700 transition-all shadow-lg hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                className="flex-1 bg-red-600 text-white font-black py-4 rounded-xl hover:bg-red-700 transition-all shadow-lg hover:scale-[1.02] active:scale-95 disabled:opacity-50 text-xs italic uppercase"
               >
-                加入红队
+                加入红队 JOIN RED
               </button>
               <button 
                 onClick={() => handleAction('register', 'blue')}
                 disabled={loading || !data.registrationOpen}
-                className="flex-1 bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                className="flex-1 bg-blue-600 text-white font-black py-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:scale-[1.02] active:scale-95 disabled:opacity-50 text-xs italic uppercase"
               >
-                加入蓝队
+                加入蓝队 JOIN BLUE
               </button>
             </>
           ) : (
             <button 
               onClick={() => handleAction('cancel')}
               disabled={loading || !data.registrationOpen}
-              className="w-full bg-secondary text-secondary-foreground font-bold py-4 rounded-xl hover:bg-secondary/80 transition-all disabled:opacity-50"
+              className="w-full bg-slate-100 text-slate-500 font-black py-4 rounded-xl hover:bg-slate-200 transition-all disabled:opacity-50 text-xs italic uppercase"
             >
-              取消报名
+              取消报名 CANCEL
             </button>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-red-50 dark:bg-red-950/20 rounded-2xl p-6 border border-red-200 dark:border-red-900/50">
-          <h3 className="text-xl font-black text-red-600 mb-4 flex items-center gap-2">
-            <span className="w-3 h-3 bg-red-600 rounded-full animate-pulse"></span>
-            红队名单 ({redTeam.length})
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+        <div className="bg-red-50/50 rounded-2xl md:rounded-3xl p-5 md:p-6 border border-red-100">
+          <h3 className="text-sm md:text-xl font-black text-red-600 mb-4 flex items-center gap-2 uppercase italic tracking-tighter">
+            <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
+            红队名单 RED TEAM ({redTeam.length})
           </h3>
-          <ul className="space-y-2">
+          <div className="flex flex-wrap gap-2">
             {redTeam.map((p, i) => (
-              <li key={i} className="bg-card p-3 rounded-lg shadow-sm border text-sm font-medium">
+              <span key={i} className="bg-white px-4 py-2 rounded-full shadow-sm border border-red-50 text-[10px] md:text-xs font-black text-red-900 uppercase">
                 {p.username}
-              </li>
+              </span>
             ))}
-            {redTeam.length === 0 && <li className="text-muted-foreground text-sm italic">虚位以待...</li>}
-          </ul>
+            {redTeam.length === 0 && <span className="text-slate-400 text-xs italic">虚位以待...</span>}
+          </div>
         </div>
 
-        <div className="bg-blue-50 dark:bg-blue-950/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-900/50">
-          <h3 className="text-xl font-black text-blue-600 mb-4 flex items-center gap-2">
-            <span className="w-3 h-3 bg-blue-600 rounded-full animate-pulse"></span>
-            蓝队名单 ({blueTeam.length})
+        <div className="bg-blue-50/50 rounded-2xl md:rounded-3xl p-5 md:p-6 border border-blue-100">
+          <h3 className="text-sm md:text-xl font-black text-blue-600 mb-4 flex items-center gap-2 uppercase italic tracking-tighter">
+            <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
+            蓝队名单 BLUE TEAM ({blueTeam.length})
           </h3>
-          <ul className="space-y-2">
+          <div className="flex flex-wrap gap-2">
             {blueTeam.map((p, i) => (
-              <li key={i} className="bg-card p-3 rounded-lg shadow-sm border text-sm font-medium">
+              <span key={i} className="bg-white px-4 py-2 rounded-full shadow-sm border border-blue-50 text-[10px] md:text-xs font-black text-blue-900 uppercase">
                 {p.username}
-              </li>
+              </span>
             ))}
-            {blueTeam.length === 0 && <li className="text-muted-foreground text-sm italic">虚位以待...</li>}
-          </ul>
+            {blueTeam.length === 0 && <span className="text-slate-400 text-xs italic">虚位以待...</span>}
+          </div>
         </div>
       </div>
     </div>

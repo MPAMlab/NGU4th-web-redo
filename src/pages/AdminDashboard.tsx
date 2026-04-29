@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   Users, Trophy, Swords, Zap, Settings, Info, Save, Trash2, ArrowUp, ArrowDown, 
-  RotateCcw, Plus, Edit, X, LayoutDashboard, Database, Activity, Search, Award, ChevronLeft, PlusCircle, Filter, BookOpen, Star, Eye, EyeOff, Check, Play, Archive, Globe, FileText, QrCode
+  RotateCcw, Plus, Edit, X, LayoutDashboard, Database, Activity, Search, Award, ChevronLeft, PlusCircle, Filter, BookOpen, Star, Eye, EyeOff, Check, Play, Archive, Globe, FileText, QrCode, Menu
 } from 'lucide-react';
 import { UnifiedDateTimePicker } from '@/components/ui/unified-date-time-picker';
 import { parse, format } from 'date-fns';
@@ -108,6 +108,7 @@ const HAND_TYPES_LIST = [
 
 export const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<'members' | 'achievements' | 'templates' | 'matches' | 'live' | 'library' | 'games' | 'minigames'>('members');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   // ... rest of state
   const [members, setMembers] = useState<Member[]>([]);
@@ -303,30 +304,86 @@ export const AdminDashboard = () => {
   const inputClass = "w-full bg-white p-2 rounded-lg font-bold border border-slate-200 focus:border-indigo-600 transition-all outline-none text-xs";
   const selectClass = "w-full bg-white p-2 rounded-lg font-black border border-slate-200 focus:border-indigo-600 outline-none cursor-pointer text-xs";
 
+  const navItems = [
+    { id: 'members', label: '选手管理', icon: <Users size={18} /> },
+    { id: 'matches', label: '赛程安排', icon: <Swords size={18} /> },
+    { id: 'live', label: '计分控制', icon: <Activity size={18} /> },
+    { id: 'minigames', label: '小游戏', icon: <Zap size={18} /> },
+    { id: 'achievements', label: '成就发放', icon: <Award size={18} /> },
+    { id: 'templates', label: '成就库', icon: <Trophy size={18} /> },
+    { id: 'library', label: '战术牌库', icon: <BookOpen size={18} /> },
+    { id: 'games', label: '全局管理', icon: <Settings size={18} /> },
+  ] as const;
+
   return (
-    <div className="max-w-6xl mx-auto p-4 space-y-4 pb-32">
-      <header className="flex justify-between items-center bg-slate-900 p-4 px-6 rounded-2xl text-white shadow-lg">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col lg:flex-row">
+      {/* Mobile Header */}
+      <header className="lg:hidden bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-50">
         <div className="flex items-center gap-3">
-           <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg"><LayoutDashboard size={20} /></div>
-           <div><h1 className="text-xl font-black tracking-tighter uppercase italic leading-none">NGU4th Admin</h1><p className="text-[8px] font-bold opacity-40 uppercase tracking-widest">Global Ops v9.9</p></div>
+          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center"><LayoutDashboard size={16} /></div>
+          <h1 className="font-black italic uppercase tracking-tighter text-sm">NGU4th Admin</h1>
         </div>
-        <div className="flex gap-2">
-          <a href="/live" target="_blank" className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-black text-[9px] uppercase transition-all flex items-center gap-2 italic tracking-wider border border-white/5"><Activity size={12} /> Live View</a>
-          <a href="/dashboard" className="bg-slate-800 hover:bg-black text-white px-4 py-2 rounded-lg font-black text-[9px] uppercase transition-all flex items-center gap-2 border border-white/5">Dashboard</a>
-        </div>
+        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
       </header>
 
-      <nav className="flex gap-1 bg-slate-200/50 p-1 rounded-xl w-fit border border-slate-200">
-        {(['members', 'achievements', 'templates', 'matches', 'live', 'library', 'minigames', 'games'] as const).map(tab => (
-          <button key={tab} onClick={() => switchTab(tab)} className={`px-4 py-1.5 rounded-lg font-black transition-all whitespace-nowrap uppercase tracking-tighter text-[9px] ${activeTab === tab ? 'bg-white shadow-sm text-indigo-600 border border-indigo-100' : 'text-slate-500 hover:text-slate-800'}`}>
-            {tab === 'members' ? '选手' : tab === 'achievements' ? '发放' : tab === 'templates' ? '成就库' : tab === 'matches' ? '赛程' : tab === 'live' ? '计分' : tab === 'library' ? '牌库' : tab === 'minigames' ? '小游戏' : '全局管理'}
-          </button>
-        ))}
-      </nav>
+      {/* Sidebar Navigation */}
+      <aside className={`
+        fixed lg:static inset-y-0 left-0 z-40 w-64 bg-slate-900 text-white transform transition-transform duration-300 ease-in-out
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        flex flex-col border-r border-white/5 shadow-2xl
+      `}>
+        <div className="p-6 hidden lg:flex items-center gap-3 border-b border-white/5">
+          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg"><LayoutDashboard size={20} /></div>
+          <div>
+            <h1 className="text-lg font-black tracking-tighter uppercase italic leading-none">NGU4th</h1>
+            <p className="text-[8px] font-bold opacity-40 uppercase tracking-widest">Global Ops v9.9</p>
+          </div>
+        </div>
 
-      {/* Tab: Minigames Management */}
-      {activeTab === 'minigames' && (
-         <div className="space-y-4 animate-in fade-in duration-300">
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          {navItems.map(item => (
+            <button
+              key={item.id}
+              onClick={() => { switchTab(item.id); setIsSidebarOpen(false); }}
+              className={`
+                w-full flex items-center gap-3 px-4 py-3 rounded-xl font-black text-xs uppercase italic tracking-tighter transition-all
+                ${activeTab === item.id 
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 translate-x-1' 
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'}
+              `}
+            >
+              <span className={activeTab === item.id ? 'text-white' : 'text-slate-500'}>{item.icon}</span>
+              {item.label}
+              {activeTab === item.id && <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full"></div>}
+            </button>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-white/5 space-y-2">
+          <a href="/live" target="_blank" className="flex items-center gap-3 px-4 py-3 rounded-xl font-black text-[10px] uppercase italic text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+            <Globe size={16} /> Open Live View
+          </a>
+          <a href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl font-black text-[10px] uppercase italic text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+            <LayoutDashboard size={16} /> Player Dashboard
+          </a>
+        </div>
+      </aside>
+
+      {/* Overlay for mobile sidebar */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden" 
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Main Content Area */}
+      <main className="flex-1 p-4 lg:p-8 overflow-x-hidden max-w-6xl mx-auto w-full">
+        {/* Tab: Minigames Management */}
+        {activeTab === 'minigames' && (
+           <div className="space-y-4 animate-in fade-in duration-300">
             <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center">
                <div className="flex flex-col"><h3 className="font-black italic uppercase text-[10px] tracking-widest text-slate-400">Minigame Coordinator</h3><p className="text-[11px] font-bold text-slate-800">小游戏发布与胜场结算</p></div>
                <button onClick={()=>setEditingMinigame({ status: 'recruiting', max_players: 8 })} className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-black uppercase text-[10px] italic shadow-lg hover:scale-105 transition-all flex items-center gap-2"><Plus size={14}/> 发布新挑战 NEW EVENT</button>
@@ -760,6 +817,7 @@ export const AdminDashboard = () => {
              </div>           )}
         </div>
       )}
+      </main>
     </div>
   );
 };
