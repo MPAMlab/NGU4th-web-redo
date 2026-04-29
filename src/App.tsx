@@ -6,7 +6,7 @@ import { AdminDashboard } from './pages/AdminDashboard'
 import { LiveView } from './pages/LiveView'
 import { MatchHistory } from './pages/MatchHistory'
 import { NotFound } from './pages/NotFound'
-import { Trophy, Swords, Zap, LogIn, MapPin, Star, BookOpen, Info, Hash, Activity, Users, History } from 'lucide-react'
+import { Trophy, Swords, Zap, LogIn, MapPin, Star, BookOpen, Info, Hash, Activity, Users, History, LayoutDashboard } from 'lucide-react'
 import { AchievementToast, Achievement } from './components/AchievementToast'
 
 const Badge = ({ children, className, variant = 'default' }: any) => {
@@ -95,7 +95,6 @@ function App() {
 
         <Routes>
           <Route path="/" element={
-            auth ? <Navigate to="/dashboard" /> : (
               <div className="container mx-auto px-4 py-12 max-w-4xl space-y-16 pb-32 animate-in fade-in duration-1000">
                 {/* Hero Banner */}
                 <section className="relative rounded-[3.5rem] bg-slate-900 p-12 overflow-hidden text-white shadow-[0_50px_100px_rgba(15,23,42,0.5)]">
@@ -114,13 +113,23 @@ function App() {
                         {activeGame?.description || '第四届 NeverGiveUp 联合对抗赛。在这里，音游成绩将转化为强大的扑克手牌，与你的队友并肩作战，向一亿总分发起挑战。'}
                       </p>
                       <div className="flex flex-wrap gap-6 pt-4">
-                         <a 
-                           href="/api/auth/login" 
-                           className="bg-white text-slate-950 hover:bg-indigo-500 hover:text-white px-10 py-5 rounded-[2rem] font-black text-xl uppercase italic tracking-tighter transition-all shadow-2xl hover:scale-105 active:scale-95 flex items-center gap-3 group"
-                         >
-                           <LogIn size={24} className="group-hover:translate-x-1 transition-transform" />
-                           进入系统 LOGIN
-                         </a>
+                         {auth ? (
+                            <a 
+                              href="/dashboard" 
+                              className="bg-indigo-500 text-white hover:bg-white hover:text-slate-950 px-10 py-5 rounded-[2rem] font-black text-xl uppercase italic tracking-tighter transition-all shadow-2xl hover:scale-105 active:scale-95 flex items-center gap-3 group"
+                            >
+                              <LayoutDashboard size={24} className="group-hover:translate-x-1 transition-transform" />
+                              进入控制台 DASHBOARD
+                            </a>
+                         ) : (
+                            <a 
+                              href="/api/auth/login" 
+                              className="bg-white text-slate-950 hover:bg-indigo-500 hover:text-white px-10 py-5 rounded-[2rem] font-black text-xl uppercase italic tracking-tighter transition-all shadow-2xl hover:scale-105 active:scale-95 flex items-center gap-3 group"
+                            >
+                              <LogIn size={24} className="group-hover:translate-x-1 transition-transform" />
+                              进入系统 LOGIN
+                            </a>
+                         )}
                          <a 
                            href="/live" 
                            className="border-2 border-white/20 hover:bg-white/10 text-white px-10 py-5 rounded-[2rem] font-black text-xl uppercase italic tracking-tighter transition-all flex items-center gap-3"
@@ -202,7 +211,6 @@ function App() {
                   </section>
                 )}
               </div>
-            )
           } />
           <Route path="/dashboard" element={
             auth ? (
