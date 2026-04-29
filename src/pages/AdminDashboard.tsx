@@ -124,6 +124,7 @@ export const AdminDashboard = () => {
   const [applyRedJoker, setApplyRedJoker] = useState(true);
   const [applyBlueJoker, setApplyBlueJoker] = useState(true);
   const [editingCard, setEditingCard] = useState<Partial<Card> | null>(null);
+  const [assigningCard, setAssigningCard] = useState<Card | null>(null);
   const [editingTplId, setEditingTplId] = useState<number | null>(null);
   const [editTplForm, setEditTplForm] = useState<Partial<Achievement>>({});
   const [editingMinigame, setEditingMinigame] = useState<any | null>(null);
@@ -709,16 +710,88 @@ export const AdminDashboard = () => {
 
       {/* Tab: Card Library */}
       {activeTab === 'library' && (
+         <>
          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in duration-300">
             <div className="p-4 px-6 border-b flex justify-between items-center bg-slate-50">
                <div className="flex gap-1 bg-slate-200/50 p-1 rounded-lg">{(['all', 'joker', 'tarot', 'fake'] as const).map(f => (<button key={f} onClick={()=>setLibraryFilter(f)} className={`px-3 py-1 rounded-md font-black text-[8px] uppercase transition-all ${libraryFilter === f ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-900'}`}>{f}</button>))}</div>
                <button onClick={()=>setEditingCard({ type: 'joker', is_variable: 0, multiplier: 1.0, exponent_bonus: 0.0 })} className="bg-slate-900 text-white px-4 py-2 rounded-lg font-black uppercase text-[9px] shadow hover:scale-105 transition-all flex items-center gap-2 italic"><Plus size={12} /> New Asset</button>
             </div>
-            <div className="overflow-auto max-h-[600px]"><table className="w-full text-left text-xs"><thead className="bg-slate-50 font-black border-b sticky top-0 z-10 uppercase tracking-widest text-slate-400"><tr><th className="p-3 px-6">Name</th><th className="p-3">Type</th><th className="p-3">Effect Logic</th><th className="p-3 px-6 text-right">Ops</th></tr></thead><tbody className="divide-y divide-slate-100">{filteredLibrary.map(card => (<tr key={card.id} className="hover:bg-slate-50"><td className="p-3 px-6 font-black uppercase truncate max-w-[150px]">{card.name}</td><td className="p-3"><Badge variant="outline">{card.type}</Badge></td><td className="p-3 text-slate-400 font-bold italic truncate max-w-[300px]">{card.description}</td><td className="p-3 px-6 text-right"><div className="flex justify-end gap-1"><button onClick={()=>setEditingCard(card)} className="p-1.5 text-slate-400 hover:text-indigo-600 rounded"><Edit size={14} /></button><button onClick={()=>{if(confirm('Delete?')) handleCardCRUD('delete_card', { cardId: card.id })}} className="p-1.5 text-slate-400 hover:text-red-600 rounded"><Trash2 size={14} /></button></div></td></tr>))}</tbody></table></div>
+            <div className="overflow-auto max-h-[600px]"><table className="w-full text-left text-xs"><thead className="bg-slate-50 font-black border-b sticky top-0 z-10 uppercase tracking-widest text-slate-400"><tr><th className="p-3 px-6">Name</th><th className="p-3">Type</th><th className="p-3">Effect Logic</th><th className="p-3 px-6 text-right">Ops</th></tr></thead><tbody className="divide-y divide-slate-100">{filteredLibrary.map(card => (<tr key={card.id} className="hover:bg-slate-50"><td className="p-3 px-6 font-black uppercase truncate max-w-[150px]">{card.name}</td><td className="p-3"><Badge variant="outline">{card.type}</Badge></td><td className="p-3 text-slate-400 font-bold italic truncate max-w-[300px]">{card.description}</td><td className="p-3 px-6 text-right"><div className="flex justify-end gap-1"><button onClick={()=>setAssigningCard(card)} title="Assign to Team/User" className="p-1.5 text-slate-400 hover:text-emerald-600 rounded"><PlusCircle size={14} /></button><button onClick={()=>setEditingCard(card)} className="p-1.5 text-slate-400 hover:text-indigo-600 rounded"><Edit size={14} /></button><button onClick={()=>{if(confirm('Delete?')) handleCardCRUD('delete_card', { cardId: card.id })}} className="p-1.5 text-slate-400 hover:text-red-600 rounded"><Trash2 size={14} /></button></div></td></tr>))}</tbody></table></div>
             {editingCard && (
-               <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-6 z-50"><div className="bg-white p-8 rounded-3xl border border-indigo-600 shadow-2xl max-w-sm w-full space-y-6 animate-in zoom-in-95"><h3 className="font-black italic uppercase text-[10px] tracking-[0.2em] text-slate-400">Modify Data Node</h3><form onSubmit={(e)=>{ e.preventDefault(); const fd = new FormData(e.currentTarget); handleCardCRUD(editingCard.id ? 'update_card' : 'create_card', { cardId: editingCard.id, name: fd.get('name'), type: fd.get('type'), description: fd.get('description'), multiplier: parseFloat(fd.get('multiplier') as string), exponent_bonus: parseFloat(fd.get('exponent_bonus') as string), is_variable: fd.get('is_variable') === 'on' ? 1 : 0 }); }} className="space-y-4"><input name="name" defaultValue={editingCard.name} required placeholder="Asset Name" className={inputClass} /><select name="type" defaultValue={editingCard.type} className={selectClass}><option value="joker">Joker</option><option value="tarot">Tarot</option><option value="fake">Fake</option></select><textarea name="description" defaultValue={editingCard.description} required placeholder="Intel" className={inputClass + " h-20 resize-none"} /><div className="grid grid-cols-2 gap-2"><input name="multiplier" type="number" step="0.001" defaultValue={editingCard.multiplier} className={inputClass} /><input name="exponent_bonus" type="number" step="0.001" defaultValue={editingCard.exponent_bonus} className={inputClass} /></div><label className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer"><input name="is_variable" type="checkbox" defaultChecked={editingCard.is_variable === 1} className="accent-indigo-600" /><span className="font-black uppercase text-[8px] tracking-widest text-slate-400">Dynamic Multiplier</span></label><div className="flex gap-2 pt-2"><button type="submit" className="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl font-black uppercase text-[9px]">Confirm</button><button type="button" onClick={()=>setEditingCard(null)} className="flex-1 bg-slate-900 text-white py-2.5 rounded-xl font-black uppercase text-[9px]">Cancel</button></div></form></div></div>
+               <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-6 z-50"><div className="bg-white p-8 rounded-3xl border border-indigo-600 shadow-2xl max-sm w-full space-y-6 animate-in zoom-in-95"><h3 className="font-black italic uppercase text-[10px] tracking-[0.2em] text-slate-400">Modify Data Node</h3><form onSubmit={(e)=>{ e.preventDefault(); const fd = new FormData(e.currentTarget); handleCardCRUD(editingCard.id ? 'update_card' : 'create_card', { cardId: editingCard.id, name: fd.get('name'), type: fd.get('type'), description: fd.get('description'), multiplier: parseFloat(fd.get('multiplier') as string), exponent_bonus: parseFloat(fd.get('exponent_bonus') as string), is_variable: fd.get('is_variable') === 'on' ? 1 : 0 }); }} className="space-y-4"><input name="name" defaultValue={editingCard.name} required placeholder="Asset Name" className={inputClass} /><select name="type" defaultValue={editingCard.type} className={selectClass}><option value="joker">Joker</option><option value="tarot">Tarot</option><option value="fake">Fake</option></select><textarea name="description" defaultValue={editingCard.description} required placeholder="Intel" className={inputClass + " h-20 resize-none"} /><div className="grid grid-cols-2 gap-2"><input name="multiplier" type="number" step="0.001" defaultValue={editingCard.multiplier} className={inputClass} /><input name="exponent_bonus" type="number" step="0.001" defaultValue={editingCard.exponent_bonus} className={inputClass} /></div><label className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer"><input name="is_variable" type="checkbox" defaultChecked={editingCard.is_variable === 1} className="accent-indigo-600" /><span className="font-black uppercase text-[8px] tracking-widest text-slate-400">Dynamic Multiplier</span></label><div className="flex gap-2 pt-2"><button type="submit" className="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl font-black uppercase text-[9px]">Confirm</button><button type="button" onClick={()=>setEditingCard(null)} className="flex-1 bg-slate-900 text-white py-2.5 rounded-xl font-black uppercase text-[9px]">Cancel</button></div></form></div></div>
+            )}
+            {assigningCard && (
+               <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-6 z-50">
+                  <div className="bg-white p-8 rounded-3xl border border-emerald-600 shadow-2xl max-w-sm w-full space-y-6 animate-in zoom-in-95">
+                     <h3 className="font-black italic uppercase text-[10px] tracking-[0.2em] text-slate-400">Assign Asset: {assigningCard.name}</h3>
+                     <form onSubmit={(e)=>{ 
+                        e.preventDefault(); 
+                        const fd = new FormData(e.currentTarget); 
+                        handleCardCRUD('assign', { cardId: assigningCard.id, ownerType: fd.get('ownerType'), ownerId: fd.get('ownerId') }); 
+                        setAssigningCard(null);
+                     }} className="space-y-4">
+                        <select name="ownerType" className={selectClass} required>
+                           <option value="team">Assign to Team</option>
+                           <option value="user">Assign to User</option>
+                        </select>
+                        <select name="ownerId" className={selectClass} required>
+                           <optgroup label="Teams">
+                              <option value="red">Red Team</option>
+                              <option value="blue">Blue Team</option>
+                           </optgroup>
+                           <optgroup label="Users">
+                              {members.map(m => <option key={m.kinde_id} value={m.kinde_id}>{m.username}</option>)}
+                           </optgroup>
+                        </select>
+                        <div className="flex gap-2 pt-2">
+                           <button type="submit" className="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-black uppercase text-[9px]">Assign</button>
+                           <button type="button" onClick={()=>setAssigningCard(null)} className="flex-1 bg-slate-900 text-white py-2.5 rounded-xl font-black uppercase text-[9px]">Cancel</button>
+                        </div>
+                     </form>
+                  </div>
+               </div>
             )}
          </div>
+         
+         <div className="mt-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in duration-300">
+            <div className="p-4 px-6 border-b bg-slate-50 flex justify-between items-center">
+               <div className="flex flex-col"><h3 className="font-black italic uppercase text-[10px] tracking-widest text-slate-400">Inventory Management Hub</h3><p className="text-[11px] font-bold text-slate-800">Active Asset Assignments</p></div>
+            </div>
+            <div className="overflow-auto max-h-[400px]">
+               <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 font-black border-b sticky top-0 z-10 uppercase tracking-widest text-slate-400">
+                     <tr>
+                        <th className="p-3 px-6">Asset Name</th>
+                        <th className="p-3">Assigned To</th>
+                        <th className="p-3">Type</th>
+                        <th className="p-3 px-6 text-right">Ops</th>
+                     </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                     {inventory.map(item => (
+                        <tr key={item.id} className="hover:bg-slate-50">
+                           <td className="p-3 px-6 font-black uppercase text-indigo-600">{item.card_name}</td>
+                           <td className="p-3">
+                              <Badge variant={item.owner_id === 'red' ? 'default' : item.owner_id === 'blue' ? 'secondary' : 'outline'}>
+                                 {item.owner_name}
+                              </Badge>
+                           </td>
+                           <td className="p-3 opacity-40 font-bold uppercase italic text-[10px]">{item.card_type}</td>
+                           <td className="p-3 px-6 text-right">
+                              <button onClick={()=>{if(confirm('Revoke Asset?')) handleCardCRUD('revoke', { inventoryId: item.id })}} className="p-1.5 text-slate-400 hover:text-red-600 rounded">
+                                 <RotateCcw size={14} />
+                              </button>
+                           </td>
+                        </tr>
+                     ))}
+                     {inventory.length === 0 && (
+                        <tr><td colSpan={4} className="p-8 text-center text-slate-300 font-bold italic">No active assignments found in buffer.</td></tr>
+                     )}
+                  </tbody>
+               </table>
+            </div>
+         </div>
+      </>
       )}
 
       {/* Tab: Matches */}
