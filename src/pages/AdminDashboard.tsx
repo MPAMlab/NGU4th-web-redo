@@ -525,6 +525,22 @@ export const AdminDashboard = () => {
                     <div className="space-y-4">
                        <label className="text-[8px] font-black uppercase text-slate-400">模块可见性 (Visibility)</label>
                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <label className="flex items-center justify-between p-3 bg-indigo-50 border-indigo-200 rounded-xl border cursor-pointer hover:bg-indigo-100 col-span-full">
+                             <div className="flex items-center gap-2"><span className="text-indigo-600"><Users size={14}/></span><span className="text-[10px] font-black uppercase text-indigo-900">开放玩家报名 REGISTRATION OPEN</span></div>
+                             <input 
+                                type="checkbox" 
+                                checked={systemState.registration_open === 'true'} 
+                                onChange={async (e) => {
+                                   await fetch('/api/admin/system', { 
+                                      method: 'POST', 
+                                      headers: {'Content-Type':'application/json'}, 
+                                      body: JSON.stringify({ key: 'registration_open', value: e.target.checked ? 'true' : 'false' }) 
+                                   });
+                                   fetchData(true);
+                                }} 
+                                className="w-5 h-5 accent-indigo-600" 
+                             />
+                          </label>
                           {[
                              { id: 'show_rules', label: '显示计分规则', icon: <Swords size={14}/> },
                              { id: 'show_minigames', label: '显示小游戏入口', icon: <Zap size={14}/> },

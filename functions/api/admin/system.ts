@@ -72,6 +72,7 @@ export const onRequest: PagesFunction<{
         await env.DB.prepare("UPDATE ngu4th_members SET is_registered = 0, team = NULL, team_order = 0, joker_card_id = NULL").run();
         await env.DB.prepare("DELETE FROM ngu4th_matches").run();
         await env.DB.prepare("INSERT OR REPLACE INTO ngu4th_system_config (key, value) VALUES ('active_match_id', NULL)").run();
+        await env.DB.prepare("INSERT OR REPLACE INTO ngu4th_system_config (key, value) VALUES ('registration_open', 'true')").run();
       }
 
       if (action === 'archive_game') {
