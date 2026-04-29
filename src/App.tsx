@@ -103,10 +103,13 @@ function App() {
                          <Badge>Active Season 2026</Badge>
                          <Badge variant="outline" className="flex items-center gap-2"><MapPin size={10}/> {activeGame?.location || '郑州现场'}</Badge>
                       </div>
-                      <div className="space-y-1">
-                        <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter leading-tight uppercase">Never Give Up<br/><span className="text-indigo-500">4th Edition</span></h1>
-                        <div className="flex items-center gap-2 text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] bg-white/5 border border-white/10 w-fit px-4 py-1.5 rounded-full mt-2">
-                           <Zap size={12} fill="currentColor" /> {activeGame?.name || 'Official Match Engine'}
+                      <div className="flex items-center gap-6">
+                        <img src="/logo.webp" alt="Logo" className="w-20 h-20 md:w-32 md:h-32 object-contain hidden sm:block shadow-2xl rounded-2xl" />
+                        <div className="space-y-1">
+                          <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter leading-tight uppercase">Never Give Up<br/><span className="text-indigo-500">4th Edition</span></h1>
+                          <div className="flex items-center gap-2 text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em] bg-white/5 border border-white/10 w-fit px-4 py-1.5 rounded-full mt-2">
+                             <Zap size={12} fill="currentColor" /> {activeGame?.name || 'Official Match Engine'}
+                          </div>
                         </div>
                       </div>
                       <p className="text-slate-400 font-bold max-w-lg text-base leading-relaxed italic">

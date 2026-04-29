@@ -70,7 +70,10 @@ export const RegistrationPage = () => {
   return (
     <div className="max-w-4xl mx-auto p-2 md:p-6 space-y-6 md:space-y-10">
       <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg p-5 md:p-8 border border-slate-100">
-        <h2 className="text-2xl md:text-3xl font-black mb-4 md:mb-6 tracking-tight text-slate-900 italic uppercase">比赛报名 HUB</h2>
+        <div className="flex items-center gap-4 mb-4 md:mb-6">
+          <img src="/logo.webp" alt="Logo" className="w-12 h-12 md:w-16 md:h-16 object-contain" />
+          <h2 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 italic uppercase">比赛报名 HUB</h2>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mb-6 md:mb-8">
           <div className="space-y-1 md:space-y-2">
