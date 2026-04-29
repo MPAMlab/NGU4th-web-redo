@@ -254,6 +254,14 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame }: {
                 <div className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 shadow-sm flex flex-col items-center gap-4 group hover:border-indigo-100 transition-all"><div className="w-14 h-14 bg-purple-50 text-purple-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner"><Zap /></div><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">活跃挑战</span><span className="text-2xl font-black text-slate-900 tabular-nums">{minigames.filter(g=>g.is_joined).length}</span></div>
                 <div className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 shadow-sm flex flex-col items-center gap-4 group hover:border-indigo-100 transition-all"><div className="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner"><Activity /></div><span className="text-[10px] font-black uppercase tracking-widest text-slate-400">系统状态</span><span className="text-2xl font-black text-slate-900">SYNCED</span></div>
              </div>
+
+             <div className="bg-white rounded-[3rem] border-2 border-slate-100 shadow-2xl overflow-hidden">
+                <div className="bg-slate-900 p-6 flex items-center gap-4 text-white">
+                   <Users size={20} className="text-indigo-400" />
+                   <h3 className="font-black italic uppercase text-xs tracking-widest">战队对阵报名 REGISTRATION HUB</h3>
+                </div>
+                <div className="p-8"><RegistrationPage /></div>
+             </div>
           </div>
         )}
 
@@ -547,7 +555,12 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame }: {
                       <a href="/api/auth/logout" className="p-3 bg-red-600/20 text-red-500 border border-red-600/30 rounded-xl hover:bg-red-600 hover:text-white transition-all"><LogOut size={16}/></a>
                    </div>
                 </div>
-                <div className="p-8"><RegistrationPage /></div>
+                <div className="p-8">
+                   <div className="bg-slate-50 rounded-2xl p-6 border-2 border-dashed border-slate-200 text-center space-y-2">
+                      <p className="text-sm font-black text-slate-400 uppercase italic">报名信息已移至对阵报名页</p>
+                      <button onClick={() => setActiveTab('home')} className="text-indigo-600 font-bold text-xs hover:underline uppercase">前往查看 GO TO REGISTRATION</button>
+                   </div>
+                </div>
              </div>
           </div>
         )}
