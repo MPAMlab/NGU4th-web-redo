@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { 
   Award, Trophy, Zap, LogOut, Settings, LayoutDashboard, Calendar, Users, 
-  MapPin, ChevronRight, Star, User, BookOpen, Target, ShieldCheck, Activity, Swords, HelpCircle, QrCode, Scan, Camera, X, Upload, Info
+  MapPin, ChevronRight, Star, User, BookOpen, Target, ShieldCheck, Activity, Swords, HelpCircle, QrCode, Scan, Camera, X, Upload, Info, Check, Edit
 } from 'lucide-react';
 import { RegistrationPage } from './Registration';
 import { QRCodeSVG } from 'qrcode.react';
@@ -207,6 +207,38 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
         alert(err || "无效的 ID 或已采集");
       }
     } finally { setLoading(false); }
+  };
+
+  const [isEditingNickname, setIsEditingNickname] = useState(false);
+  const [newNickname, setNewNickname] = useState(user.username);
+
+  const handleUpdateNickname = async () => {
+    if (!newNickname.trim() || newNickname.trim() === user.username) {
+      setIsEditingNickname(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: newNickname.trim() })
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        setUser(prev => ({ ...prev, username: result.username }));
+        setIsEditingNickname(false);
+      } else {
+        const err = await res.json();
+        alert(err.error || "更新失败");
+      }
+    } catch (err) {
+      alert("网络错误");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const availableTabs = [
@@ -490,9 +522,32 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
                          </div>
                          <input id="avatar-input" type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
                       </div>
-                      <div className="space-y-0.5 md:space-y-1 min-w-0">
+                      <div className="space-y-0.5 md:space-y-1 min-w-0 flex-1">
                          <p className="text-[8px] md:text-[10px] font-black uppercase text-indigo-400 tracking-[0.2em] md:tracking-[0.4em]">Personal Data</p>
-                         <h3 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter truncate">{user.username}</h3>
+                         {isEditingNickname ? (
+                            <div className="flex items-center gap-2 mt-1">
+                               <input 
+                                  value={newNickname} 
+                                  onChange={(e) => setNewNickname(e.target.value)}
+                                  className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 text-lg md:text-2xl font-black italic uppercase tracking-tighter text-white outline-none focus:border-indigo-500 w-full"
+                                  autoFocus
+                                  onKeyDown={(e) => e.key === 'Enter' && handleUpdateNickname()}
+                               />
+                               <button onClick={handleUpdateNickname} disabled={loading} className="bg-indigo-600 p-2 rounded-lg hover:bg-indigo-500 transition-all shadow-lg">
+                                  <Check size={16} />
+                               </button>
+                               <button onClick={() => { setIsEditingNickname(false); setNewNickname(user.username); }} className="bg-white/10 p-2 rounded-lg hover:bg-white/20 transition-all">
+                                  <X size={16} />
+                               </button>
+                            </div>
+                         ) : (
+                            <div className="flex items-center gap-3 group/name">
+                               <h3 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter truncate">{user.username}</h3>
+                               <button onClick={() => setIsEditingNickname(true)} className="p-1.5 opacity-0 group-hover/name:opacity-100 hover:bg-white/10 rounded-lg transition-all text-indigo-400">
+                                  <Edit size={14} />
+                               </button>
+                            </div>
+                         )}
                          <p className="text-[10px] md:text-xs font-bold opacity-40 lowercase truncate">{user.email}</p>
                       </div>
                    </div>
