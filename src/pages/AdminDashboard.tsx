@@ -571,18 +571,47 @@ export const AdminDashboard = () => {
 
                  <div className="pt-4 border-t border-slate-100">
                     <h3 className="font-black italic uppercase text-[10px] tracking-widest text-red-500 flex items-center gap-2 mb-3"><RotateCcw size={12}/> 危险区域 DANGER</h3>
-                    <button 
-                       onClick={async () => {
-                          if(confirm('警告：这将删除所有玩家的非基础成就记录（保留引继和报名礼包）。此操作不可逆，确定继续？')) {
-                             await fetch('/api/admin/system', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action: 'reset_all_achievements' }) });
-                             fetchData(true);
-                             alert('成就数据已清理');
-                          }
-                       }}
-                       className="w-full py-2 border-2 border-red-100 text-red-500 rounded-xl font-black uppercase text-[8px] hover:bg-red-500 hover:text-white transition-all"
-                    >
-                       重置全服成就 (保留特殊项)
-                    </button>
+                    <div className="space-y-2">
+                       <button 
+                          onClick={async () => {
+                             if(confirm('警告：这将删除所有玩家的非基础成就记录（保留引继和报名礼包）。此操作不可逆，确定继续？')) {
+                                await fetch('/api/admin/system', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action: 'reset_all_achievements' }) });
+                                fetchData(true);
+                                alert('成就数据已清理');
+                             }
+                          }}
+                          className="w-full py-2 border-2 border-red-100 text-red-500 rounded-xl font-black uppercase text-[8px] hover:bg-red-500 hover:text-white transition-all"
+                       >
+                          清空非核心成就 (危险)
+                       </button>
+                       <button 
+                          onClick={async () => {
+                             if(confirm('警告：这将清空除 [引继] 和 [STAFF] 以外的所有成就，并根据当前数据重新为所有用户发放。如果用户量很大，可能需要一点时间。确定继续？')) {
+                                setLoading(true);
+                                try {
+                                   const res = await fetch('/api/admin/system', { 
+                                      method: 'POST', 
+                                      headers: {'Content-Type':'application/json'}, 
+                                      body: JSON.stringify({ action: 'reset_all_achievements' }) 
+                                   });
+                                   if (res.ok) {
+                                      alert('全服成就已重置并重新发放完成！');
+                                   } else {
+                                      const err = await res.json();
+                                      alert('操作失败: ' + (err.error || '未知错误'));
+                                   }
+                                } catch (e) {
+                                   alert('请求失败');
+                                } finally {
+                                   fetchData(true);
+                                }
+                             }
+                          }}
+                          className="w-full py-2 bg-slate-900 text-white rounded-xl font-black uppercase text-[8px] hover:bg-black transition-all shadow-lg"
+                       >
+                          全服成就重算 (一键修复)
+                       </button>
+                    </div>
                  </div>
               </div>
               <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">

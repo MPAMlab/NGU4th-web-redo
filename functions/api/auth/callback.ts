@@ -62,7 +62,7 @@ export const onRequest: PagesFunction<{
     // Check legacy status
     let legacyStatus = 0;
     try {
-      const legacyUser = await env.DB.prepare("SELECT * FROM members WHERE kinde_id = ?").bind(kindeId).first();
+      const legacyUser = await env.DB.prepare("SELECT * FROM members WHERE kinde_user_id = ?").bind(kindeId).first();
       if (legacyUser) legacyStatus = 1;
     } catch (e) {}
 
@@ -72,7 +72,8 @@ export const onRequest: PagesFunction<{
       VALUES (?, ?, ?, ?, ?)
       ON CONFLICT(kinde_id) DO UPDATE SET
         username = excluded.username,
-        email = excluded.email
+        email = excluded.email,
+        legacy_status = excluded.legacy_status
     `).bind(kindeId, username, email, role, legacyStatus).run();
 
     // Grant special achievements...

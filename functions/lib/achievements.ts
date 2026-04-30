@@ -28,7 +28,7 @@ export async function checkAchievements(db: D1Database, kindeId: string, context
 
         switch (tpl.trigger_type) {
           case 'team_join':
-            if (context.type === 'team_join' && user.team) shouldGrant = true;
+            if (context.type === 'team_join' && user.team && (tpl.trigger_value === 'any' || user.team === tpl.trigger_value)) shouldGrant = true;
             break;
           case 'role_eq':
             if (user.role === tpl.trigger_value) shouldGrant = true;
@@ -39,7 +39,7 @@ export async function checkAchievements(db: D1Database, kindeId: string, context
           case 'legacy':
             if (context.type === 'registration' || context.type === 'login') {
                try {
-                 const isLegacy: any = await db.prepare("SELECT kinde_id FROM members WHERE kinde_id = ?").bind(kindeId).first();
+                 const isLegacy: any = await db.prepare("SELECT kinde_user_id FROM members WHERE kinde_user_id = ?").bind(kindeId).first();
                  if (isLegacy) shouldGrant = true;
                } catch (e) {
                  // members table might not exist in all environments

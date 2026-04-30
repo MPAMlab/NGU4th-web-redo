@@ -93,9 +93,22 @@ export const onRequest: PagesFunction<{
           DELETE FROM ngu4th_user_achievements 
           WHERE achievement_id IN (
             SELECT id FROM ngu4th_achievements 
-            WHERE trigger_type NOT IN ('registration', 'legacy') OR trigger_type IS NULL
+            WHERE name NOT IN ('NGU传说的冒险者', 'NGU STAFF')
           )
         `).run();
+
+        // Re-calculate for all members
+        const { checkAchievements } = await import("../../../lib/achievements");
+        const members = await env.DB.prepare("SELECT kinde_id FROM ngu4th_members").all();
+        
+        for (const m of (members.results || [])) {
+          // Trigger various types to catch all possible triggers
+          await checkAchievements(env.DB, m.kinde_id as string, { type: 'login' });
+          await checkAchievements(env.DB, m.kinde_id as string, { type: 'registration' });
+          await checkAchievements(env.DB, m.kinde_id as string, { type: 'team_join' });
+          await checkAchievements(env.DB, m.kinde_id as string, { type: 'score' }); // Recalculate contribution
+          await checkAchievements(env.DB, m.kinde_id as string, { type: 'stamp' }); // Recalculate stamp counts
+        }
       }
 
       return new Response(JSON.stringify({ success: true }), {
