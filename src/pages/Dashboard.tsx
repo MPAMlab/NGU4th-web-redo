@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { 
   Award, Trophy, Zap, LogOut, Settings, LayoutDashboard, Calendar, Users, 
-  MapPin, ChevronRight, Star, User, BookOpen, Target, ShieldCheck, Activity, Swords, HelpCircle, QrCode, Scan, Camera, X, Upload
+  MapPin, ChevronRight, Star, User, BookOpen, Target, ShieldCheck, Activity, Swords, HelpCircle, QrCode, Scan, Camera, X, Upload, Info
 } from 'lucide-react';
 import { RegistrationPage } from './Registration';
 import { QRCodeSVG } from 'qrcode.react';
