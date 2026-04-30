@@ -117,7 +117,7 @@ interface RankingEntry {
   achievement_count: number;
 }
 
-export const DashboardPage = ({ user: initialUser, achievements, activeGame }: { user: User, achievements: Achievement[], activeGame: GameSettings | null }) => {
+export const DashboardPage = ({ user: initialUser, achievements, activeGame, config }: { user: User, achievements: Achievement[], activeGame: GameSettings | null, config?: any }) => {
   const [user, setUser] = useState(initialUser);
   const [minigames, setMinigames] = useState<Minigame[]>([]);
   const [stamps, setStamps] = useState<Stamp[]>([]);
@@ -131,6 +131,8 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame }: {
   const [activeTab, setActiveTab] = useState<'home' | 'challenges' | 'achievements' | 'stamps' | 'inventory' | 'profile'>('home');
   const [inventorySubTab, setInventorySubTab] = useState<'team' | 'gallery'>('team');
   const [manualScanId, setManualScanId] = useState('');
+
+  const stampsOpen = config?.stamps_open !== 'false';
 
   const fetchData = async () => {
     try {
@@ -326,21 +328,42 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame }: {
              </div>
 
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                <button onClick={() => setShowMyQR(true)} className="bg-white p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] border-2 border-slate-100 shadow-lg hover:border-indigo-500 hover:scale-[1.02] transition-all flex items-center justify-between group text-slate-900">
+                <button 
+                  onClick={() => stampsOpen ? setShowMyQR(true) : alert("集邮录入已暂时关闭")} 
+                  className={`p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] border-2 shadow-lg transition-all flex items-center justify-between group ${
+                    stampsOpen ? 'bg-white border-slate-100 hover:border-indigo-500 hover:scale-[1.02] text-slate-900' : 'bg-slate-50 border-slate-200 opacity-50 cursor-not-allowed text-slate-400'
+                  }`}
+                >
                    <div className="text-left">
-                      <p className="text-[8px] md:text-[10px] font-black uppercase text-indigo-500 tracking-widest mb-1">My Identity</p>
+                      <p className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest mb-1 ${stampsOpen ? 'text-indigo-500' : 'text-slate-400'}`}>My Identity</p>
                       <h4 className="text-lg md:text-xl font-black italic uppercase">展示二维码</h4>
                    </div>
-                   <div className="w-12 h-12 md:w-14 md:h-14 bg-indigo-50 text-indigo-500 rounded-xl md:rounded-2xl flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all shadow-inner"><QrCode size={24} className="w-6 h-6 md:w-7 md:h-7" /></div>
+                   <div className={`w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center transition-all shadow-inner ${
+                     stampsOpen ? 'bg-indigo-50 text-indigo-500 group-hover:bg-indigo-500 group-hover:text-white' : 'bg-slate-200 text-slate-400'
+                   }`}><QrCode size={24} className="w-6 h-6 md:w-7 md:h-7" /></div>
                 </button>
-                <button onClick={() => setShowScanner(true)} className="bg-slate-900 p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] shadow-lg hover:bg-indigo-600 hover:scale-[1.02] transition-all flex items-center justify-between group text-white">
+                <button 
+                  onClick={() => stampsOpen ? setShowScanner(true) : alert("集邮录入已暂时关闭")} 
+                  className={`p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] shadow-lg transition-all flex items-center justify-between group ${
+                    stampsOpen ? 'bg-slate-900 hover:bg-indigo-600 hover:scale-[1.02] text-white' : 'bg-slate-800 opacity-50 cursor-not-allowed text-slate-500'
+                  }`}
+                >
                    <div className="text-left">
-                      <p className="text-[8px] md:text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-1">Scan Action</p>
+                      <p className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest mb-1 ${stampsOpen ? 'text-indigo-400' : 'text-slate-600'}`}>Scan Action</p>
                       <h4 className="text-lg md:text-xl font-black italic uppercase">立即扫码</h4>
                    </div>
-                   <div className="w-12 h-12 md:w-14 md:h-14 bg-white/10 text-white rounded-xl md:rounded-2xl flex items-center justify-center group-hover:bg-white group-hover:text-indigo-600 transition-all shadow-inner"><Scan size={24} className="w-6 h-6 md:w-7 md:h-7" /></div>
+                   <div className={`w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center transition-all shadow-inner ${
+                     stampsOpen ? 'bg-white/10 text-white group-hover:bg-white group-hover:text-indigo-600' : 'bg-slate-700 text-slate-600'
+                   }`}><Scan size={24} className="w-6 h-6 md:w-7 md:h-7" /></div>
                 </button>
              </div>
+             
+             {!stampsOpen && (
+               <div className="bg-amber-50 border-2 border-amber-100 p-4 rounded-2xl flex items-center gap-3 text-amber-700 animate-in fade-in duration-500">
+                  <Info size={18} />
+                  <p className="text-[10px] font-black uppercase italic tracking-widest">集邮录入功能已由管理员关闭，当前仅供查看进度。</p>
+               </div>
+             )}
 
              <div className="space-y-4 md:space-y-6">
                 <div className="flex items-center justify-between px-2">

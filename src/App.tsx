@@ -33,6 +33,7 @@ const HAND_TYPES = [
 function App() {
   const [auth, setAuth] = useState<{ user: any, achievements: Achievement[] } | null>(null)
   const [activeGame, setActiveGame] = useState<any>(null)
+  const [config, setConfig] = useState<any>({})
   const [loading, setLoading] = useState(true)
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([])
   const prevAchievementIds = useRef<Set<number>>(new Set())
@@ -61,6 +62,7 @@ function App() {
       if (sysRes.ok) {
         const sysData = await sysRes.json();
         setActiveGame(sysData.activeGame);
+        setConfig(sysData.config || {});
       }
     } catch (e) {
       console.error("Polling error", e);
@@ -218,7 +220,7 @@ function App() {
 ,old_string:
           <Route path="/dashboard" element={
             auth ? (
-              <DashboardPage user={auth.user} achievements={auth.achievements} activeGame={activeGame} />
+              <DashboardPage user={auth.user} achievements={auth.achievements} activeGame={activeGame} config={config} />
             ) : <Navigate to="/" />
           } />
           <Route path="/admin" element={

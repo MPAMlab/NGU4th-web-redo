@@ -34,6 +34,11 @@ export const onRequest: PagesFunction<{
     const { action, scanneeId } = await request.json() as any;
     
     if (action === 'collect') {
+      const config: any = await env.DB.prepare("SELECT value FROM ngu4th_system_config WHERE key = 'stamps_open'").first();
+      if (config && config.value === 'false') {
+        return new Response("Stamp collection is closed", { status: 403 });
+      }
+
       if (!scanneeId) return new Response("Missing scanneeId", { status: 400 });
       if (scanneeId === kindeId) return new Response("Cannot scan yourself", { status: 400 });
 
