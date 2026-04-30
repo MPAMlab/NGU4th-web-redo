@@ -216,8 +216,7 @@ function App() {
                   </section>
                 )}
               </div>
-          } />"
-,old_string:
+          } />
           <Route path="/dashboard" element={
             auth ? (
               <DashboardPage user={auth.user} achievements={auth.achievements} activeGame={activeGame} config={config} />

@@ -40,6 +40,19 @@ export const onRequest: PagesFunction<{
     if (user) {
       const { checkAchievements } = await import("../../lib/achievements");
       await checkAchievements(env.DB, kindeId, { type: 'login' });
+
+      // Fetch additional stats
+      const contributionRes: any = await env.DB.prepare("SELECT SUM(total_score) as total FROM ngu4th_rounds WHERE player_id = ?")
+        .bind(kindeId).first();
+      user.contribution = contributionRes?.total || 0;
+
+      if (user.team) {
+        const teamContributionRes: any = await env.DB.prepare("SELECT SUM(total_score) as total FROM ngu4th_rounds WHERE team = ?")
+          .bind(user.team).first();
+        user.team_contribution = teamContributionRes?.total || 0;
+      } else {
+        user.team_contribution = 0;
+      }
     }
 
     const achievements = await env.DB.prepare(`

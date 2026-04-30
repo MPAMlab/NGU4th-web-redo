@@ -21,6 +21,11 @@ interface User {
   role: string;
   kinde_id: string;
   avatar_url?: string;
+  team?: string | null;
+  contribution?: number;
+  team_contribution?: number;
+  selected_achievements?: string;
+  show_collector_avatars?: number;
 }
 
 interface Minigame {
@@ -119,6 +124,22 @@ interface RankingEntry {
 
 export const DashboardPage = ({ user: initialUser, achievements, activeGame, config }: { user: User, achievements: Achievement[], activeGame: GameSettings | null, config?: any }) => {
   const [user, setUser] = useState(initialUser);
+  
+  // Sync state when props change (from App component polling)
+  useEffect(() => {
+    setUser(prev => ({
+      ...initialUser,
+      // Preserve local states if they are fresher or not in initialUser
+      ...prev,
+      username: initialUser.username,
+      avatar_url: initialUser.avatar_url,
+      contribution: initialUser.contribution,
+      team_contribution: initialUser.team_contribution,
+      selected_achievements: initialUser.selected_achievements,
+      show_collector_avatars: initialUser.show_collector_avatars
+    }));
+  }, [initialUser]);
+
   const [minigames, setMinigames] = useState<Minigame[]>([]);
   const [stamps, setStamps] = useState<Stamp[]>([]);
   const [inventory, setInventory] = useState<Card[]>([]);
@@ -209,6 +230,39 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
     } finally { setLoading(false); }
   };
 
+  const handleUpdateSettings = async (updates: { selected_achievements?: string, show_collector_avatars?: number }) => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (res.ok) {
+        const result = await res.json();
+        setUser(prev => ({ ...prev, ...result }));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const selectedAchievementIds = user.selected_achievements ? user.selected_achievements.split(',').map(Number) : [];
+
+  const toggleAchievement = (id: number) => {
+    let newSelected: number[];
+    if (selectedAchievementIds.includes(id)) {
+      newSelected = selectedAchievementIds.filter(aid => aid !== id);
+    } else {
+      if (selectedAchievementIds.length >= 3) {
+        alert("最多只能佩戴3个成就");
+        return;
+      }
+      newSelected = [...selectedAchievementIds, id];
+    }
+    handleUpdateSettings({ selected_achievements: newSelected.join(',') });
+  };
+
   const [isEditingNickname, setIsEditingNickname] = useState(false);
   const [newNickname, setNewNickname] = useState(user.username);
 
@@ -257,26 +311,31 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
         {activeTab === 'home' && (
           <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
              <section className="relative rounded-2xl md:rounded-3xl bg-slate-900 p-6 md:p-8 overflow-hidden text-white shadow-xl">
-                <div className="relative z-10 space-y-4">
-                   <div className="flex flex-wrap gap-2">
-                      <Badge className="bg-indigo-500 text-white font-black px-3 py-0.5 rounded-full uppercase tracking-widest text-[8px] md:text-[9px]">Active Season</Badge>
-                      <Badge variant="outline" className="text-white border-white/20 font-black px-3 py-0.5 rounded-full uppercase tracking-widest text-[8px] md:text-[9px] flex items-center gap-1"><MapPin size={8} /> {activeGame?.location || '郑州现场'}</Badge>
-                   </div>
-                   <div>
-                      <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter leading-tight uppercase text-white">Never Give Up<br/><span className="text-indigo-400">4th Edition</span></h1>
-                      <div className="mt-2 flex items-center gap-2 text-indigo-300 font-black text-[8px] md:text-[9px] uppercase tracking-[0.2em] bg-white/5 border border-white/10 w-fit px-3 py-1 rounded-full">
-                         <Zap size={10} fill="currentColor" /> {activeGame?.name || 'Official Match Engine'}
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start gap-6">
+                   <div className="space-y-4">
+                      <div className="flex flex-wrap gap-2">
+                         <Badge className="bg-indigo-500 text-white font-black px-3 py-0.5 rounded-full uppercase tracking-widest text-[8px] md:text-[9px]">Active Season</Badge>
+                         <Badge variant="outline" className="text-white border-white/20 font-black px-3 py-0.5 rounded-full uppercase tracking-widest text-[8px] md:text-[9px] flex items-center gap-1"><MapPin size={8} /> {activeGame?.location || '郑州现场'}</Badge>
                       </div>
-                      <p className="text-slate-400 font-medium max-w-md text-xs md:text-sm mt-3 leading-relaxed italic opacity-80">{activeGame?.description || `欢迎回来, ${user.username}! 准备好加入红蓝对抗了吗？`}</p>
+                      <div>
+                         <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter leading-tight uppercase text-white">Never Give Up<br/><span className="text-indigo-400">4th Edition</span></h1>
+                         <div className="mt-2 flex items-center gap-2 text-indigo-300 font-black text-[8px] md:text-[9px] uppercase tracking-[0.2em] bg-white/5 border border-white/10 w-fit px-3 py-1 rounded-full">
+                            <Zap size={10} fill="currentColor" /> {activeGame?.name || 'Official Match Engine'}
+                         </div>
+                         <p className="text-slate-400 font-medium max-w-md text-xs md:text-sm mt-3 leading-relaxed italic opacity-80">{activeGame?.description || `欢迎回来, ${user.username}! 准备好加入红蓝对抗了吗？`}</p>
+                      </div>
                    </div>
-                   <div className="flex gap-2 md:gap-3 pt-1">
-                      {activeGame?.show_stamps === 1 && (
-                         <button onClick={() => setActiveTab('stamps')} className="bg-white text-slate-900 hover:bg-indigo-500 hover:text-white px-5 py-2.5 md:px-6 md:py-3 rounded-xl md:rounded-2xl font-black uppercase italic tracking-tighter transition-all shadow-lg flex items-center gap-2 group text-xs">
-                            <QrCode size={14} className="group-hover:rotate-12 transition-transform" /> 立即集邮
-                         </button>
-                      )}
-                      {user.role === 'admin' && (<a href="/admin" className="border-2 border-white/10 hover:bg-white/5 text-white px-5 py-2.5 md:px-6 md:py-3 rounded-xl md:rounded-2xl font-black uppercase italic tracking-tighter transition-all flex items-center gap-2 text-xs"><Settings size={14} /> 管理后台</a>)}
+                   <div className="shrink-0 order-first md:order-last">
+                      <img src="/logo.webp" alt="Logo" className="w-16 h-16 md:w-24 md:h-24 object-contain drop-shadow-[0_0_15px_rgba(129,140,248,0.5)]" />
                    </div>
+                </div>
+                <div className="flex gap-2 md:gap-3 pt-6 relative z-10">
+                   {activeGame?.show_stamps === 1 && (
+                      <button onClick={() => setActiveTab('stamps')} className="bg-white text-slate-900 hover:bg-indigo-500 hover:text-white px-5 py-2.5 md:px-6 md:py-3 rounded-xl md:rounded-2xl font-black uppercase italic tracking-tighter transition-all shadow-lg flex items-center gap-2 group text-xs">
+                         <QrCode size={14} className="group-hover:rotate-12 transition-transform" /> 立即集邮
+                      </button>
+                   )}
+                   {user.role === 'admin' && (<a href="/admin" className="border-2 border-white/10 hover:bg-white/5 text-white px-5 py-2.5 md:px-6 md:py-3 rounded-xl md:rounded-2xl font-black uppercase italic tracking-tighter transition-all flex items-center gap-2 text-xs"><Settings size={14} /> 管理后台</a>)}
                 </div>
                 <div className="absolute top-0 right-0 -mr-20 -mt-20 w-48 h-48 md:w-64 md:h-64 bg-indigo-600/20 rounded-full blur-3xl opacity-50 animate-pulse"></div>
                 <div className="absolute bottom-[-20px] right-[-10px] opacity-10 rotate-12 scale-110 md:scale-125 pointer-events-none"><Swords size={150} /></div>
@@ -495,19 +554,20 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
 
         {activeTab === 'profile' && (
           <div className="space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-500">
-             <div className="flex items-center gap-3 px-1 md:px-2"><div className="w-10 h-10 md:w-12 md:h-12 bg-slate-200 text-slate-700 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg"><User size={20} fill="currentColor" className="w-5 h-5 md:w-6 md:h-6" /></div><div><h2 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase text-slate-900">个人身份 ID</h2><p className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Identification Bureau</p></div></div>
+             <div className="flex items-center gap-3 px-1 md:px-2"><div className="w-10 h-10 md:w-12 md:h-12 bg-slate-200 text-slate-700 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg"><User size={20} fill="currentColor" className="w-5 h-5 md:w-6 md:h-6" /></div><div><h2 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase text-slate-900">玩家概况 STATS</h2><p className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Player Statistics Bureau</p></div></div>
+             
              <div className="bg-white rounded-2xl md:rounded-[3rem] border border-slate-100 shadow-xl md:shadow-2xl overflow-hidden">
                 <div className="bg-slate-900 p-6 md:p-8 flex justify-between items-center text-white relative">
                    <div className="absolute inset-0 opacity-10 pointer-events-none">
                       <div className="absolute top-0 right-0 w-48 h-48 md:w-64 md:h-64 bg-indigo-500 rounded-full blur-3xl -mr-24 -mt-24 md:-mr-32 md:-mt-32"></div>
                    </div>
-                   <div className="flex items-center gap-4 md:gap-6 relative z-10">
-                      <div className="relative group cursor-pointer" onClick={() => document.getElementById('avatar-input')?.click()}>
-                         <div className="w-16 h-16 md:w-24 md:h-24 rounded-2xl md:rounded-[2rem] bg-slate-800 border-2 md:border-4 border-white/10 overflow-hidden shadow-xl transition-all group-hover:scale-105 group-hover:border-indigo-500/50">
+                   <div className="flex items-center gap-4 md:gap-6 relative z-10 w-full">
+                      <div className="relative group cursor-pointer shrink-0" onClick={() => document.getElementById('avatar-input')?.click()}>
+                         <div className="w-20 h-20 md:w-32 md:h-32 rounded-2xl md:rounded-[2.5rem] bg-slate-800 border-2 md:border-4 border-white/10 overflow-hidden shadow-xl transition-all group-hover:scale-105 group-hover:border-indigo-500/50">
                             {user.avatar_url ? (
                                <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
-                               <div className="w-full h-full flex items-center justify-center text-slate-500"><User size={30} className="w-[30px] h-[30px] md:w-10 md:h-10" /></div>
+                               <div className="w-full h-full flex items-center justify-center text-slate-500"><User size={40} className="w-[40px] h-[40px] md:w-12 md:h-12" /></div>
                             )}
                             <div className={`absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${uploading ? 'opacity-100' : ''}`}>
                                {uploading ? (
@@ -515,51 +575,177 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
                                ) : (
                                   <>
                                      <Upload size={16} className="text-white mb-1 w-4 h-4 md:w-5 md:h-5" />
-                                     <span className="text-[7px] md:text-[8px] font-black uppercase">Update</span>
+                                     <span className="text-[7px] md:text-[8px] font-black uppercase text-white">Update</span>
                                   </>
                                 )}
                             </div>
                          </div>
                          <input id="avatar-input" type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
                       </div>
-                      <div className="space-y-0.5 md:space-y-1 min-w-0 flex-1">
-                         <p className="text-[8px] md:text-[10px] font-black uppercase text-indigo-400 tracking-[0.2em] md:tracking-[0.4em]">Personal Data</p>
-                         {isEditingNickname ? (
-                            <div className="flex items-center gap-2 mt-1">
-                               <input 
-                                  value={newNickname} 
-                                  onChange={(e) => setNewNickname(e.target.value)}
-                                  className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 text-lg md:text-2xl font-black italic uppercase tracking-tighter text-white outline-none focus:border-indigo-500 w-full"
-                                  autoFocus
-                                  onKeyDown={(e) => e.key === 'Enter' && handleUpdateNickname()}
-                               />
-                               <button onClick={handleUpdateNickname} disabled={loading} className="bg-indigo-600 p-2 rounded-lg hover:bg-indigo-500 transition-all shadow-lg">
-                                  <Check size={16} />
-                               </button>
-                               <button onClick={() => { setIsEditingNickname(false); setNewNickname(user.username); }} className="bg-white/10 p-2 rounded-lg hover:bg-white/20 transition-all">
-                                  <X size={16} />
-                               </button>
+                      <div className="space-y-2 md:space-y-4 min-w-0 flex-1">
+                         <div>
+                            <p className="text-[8px] md:text-[10px] font-black uppercase text-indigo-400 tracking-[0.2em] md:tracking-[0.4em] mb-1">Identification</p>
+                            {isEditingNickname ? (
+                               <div className="flex items-center gap-2">
+                                  <input 
+                                     value={newNickname} 
+                                     onChange={(e) => setNewNickname(e.target.value)}
+                                     className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 text-lg md:text-3xl font-black italic uppercase tracking-tighter text-white outline-none focus:border-indigo-500 w-full"
+                                     autoFocus
+                                     onKeyDown={(e) => e.key === 'Enter' && handleUpdateNickname()}
+                                  />
+                                  <button onClick={handleUpdateNickname} disabled={loading} className="bg-indigo-600 p-2 rounded-lg hover:bg-indigo-500 transition-all shadow-lg shrink-0">
+                                     <Check size={16} />
+                                  </button>
+                                  <button onClick={() => { setIsEditingNickname(false); setNewNickname(user.username); }} className="bg-white/10 p-2 rounded-lg hover:bg-white/20 transition-all shrink-0">
+                                     <X size={16} />
+                                  </button>
+                               </div>
+                            ) : (
+                               <div className="flex items-center gap-3 group/name">
+                                  <h3 className="text-2xl md:text-5xl font-black italic uppercase tracking-tighter truncate leading-none">{user.username}</h3>
+                                  <button onClick={() => setIsEditingNickname(true)} className="p-1.5 opacity-0 group-hover/name:opacity-100 hover:bg-white/10 rounded-lg transition-all text-indigo-400 shrink-0">
+                                     <Edit size={14} />
+                                  </button>
+                               </div>
+                            )}
+                         </div>
+
+                         <div className="flex flex-wrap items-center gap-2">
+                            <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase italic tracking-widest border ${user.team === 'red' ? 'bg-red-500/20 border-red-500 text-red-400' : user.team === 'blue' ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'bg-slate-500/20 border-slate-500 text-slate-400'}`}>
+                               {user.team ? `${user.team.toUpperCase()} TEAM` : 'NO TEAM'}
                             </div>
-                         ) : (
-                            <div className="flex items-center gap-3 group/name">
-                               <h3 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter truncate">{user.username}</h3>
-                               <button onClick={() => setIsEditingNickname(true)} className="p-1.5 opacity-0 group-hover/name:opacity-100 hover:bg-white/10 rounded-lg transition-all text-indigo-400">
-                                  <Edit size={14} />
-                               </button>
+                            <div className="px-3 py-1 rounded-full text-[9px] font-black uppercase italic tracking-widest bg-indigo-500/20 border border-indigo-500 text-indigo-400">
+                               {user.role}
                             </div>
-                         )}
-                         <p className="text-[10px] md:text-xs font-bold opacity-40 lowercase truncate">{user.email}</p>
+                         </div>
+                      </div>
+                      <div className="hidden md:flex flex-col items-end gap-3 shrink-0">
+                         <a href="/api/auth/logout" className="px-4 py-2 bg-red-600/20 text-red-500 border border-red-600/30 rounded-xl hover:bg-red-600 hover:text-white transition-all font-black text-[10px] uppercase flex items-center gap-2 italic tracking-tighter"><LogOut size={14} /> LOGOUT</a>
+                         <Badge variant="outline" className="border-white/10 text-white/30 uppercase text-[8px] font-mono">{user.kinde_id}</Badge>
                       </div>
                    </div>
-                   <div className="relative z-10 flex flex-col items-end gap-2">
-                      <Badge variant="outline" className="border-indigo-500/50 text-indigo-400 uppercase scale-90 md:scale-100">{user.role}</Badge>
-                      <a href="/api/auth/logout" className="p-2 md:p-3 bg-red-600/20 text-red-500 border border-red-600/30 rounded-lg md:rounded-xl hover:bg-red-600 hover:text-white transition-all"><LogOut size={14} className="w-[14px] h-[14px] md:w-4 md:h-4" /></a>
-                   </div>
                 </div>
-                <div className="p-6 md:p-8">
-                   <div className="bg-slate-50 rounded-xl md:rounded-2xl p-4 md:p-6 border-2 border-dashed border-slate-200 text-center space-y-2">
-                      <p className="text-xs md:text-sm font-black text-slate-400 uppercase italic">报名信息已移至对阵报名页</p>
-                      <button onClick={() => setActiveTab('home')} className="text-indigo-600 font-bold text-[10px] md:text-xs hover:underline uppercase">前往查看 HUB</button>
+
+                <div className="p-4 md:p-8 space-y-6 md:space-y-8">
+                   {/* Contribution Stats */}
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-inner flex flex-col items-center gap-2 group hover:border-indigo-100 transition-all">
+                         <Target size={24} className="text-indigo-500 mb-1" />
+                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">个人贡献分</span>
+                         <span className="text-4xl font-black italic text-slate-900 tabular-nums">{(user.contribution || 0).toLocaleString()}</span>
+                         <div className="w-12 h-1 bg-indigo-500/20 rounded-full mt-2 overflow-hidden">
+                            <div className="h-full bg-indigo-500 w-1/2"></div>
+                         </div>
+                      </div>
+                      <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-inner flex flex-col items-center gap-2 group hover:border-indigo-100 transition-all">
+                         <Users size={24} className="text-emerald-500 mb-1" />
+                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">战队总得分</span>
+                         <span className="text-4xl font-black italic text-slate-900 tabular-nums">{(user.team_contribution || 0).toLocaleString()}</span>
+                         <div className="w-12 h-1 bg-emerald-500/20 rounded-full mt-2 overflow-hidden">
+                            <div className="h-full bg-emerald-500 w-3/4"></div>
+                         </div>
+                      </div>
+                   </div>
+
+                   {/* Wearing Achievements */}
+                   <div className="space-y-4">
+                      <div className="flex items-center justify-between px-2">
+                         <h4 className="text-[10px] font-black uppercase text-slate-900 tracking-widest flex items-center gap-2 italic"><Award size={14} className="text-indigo-500" /> 佩戴成就 ({selectedAchievementIds.length}/3)</h4>
+                         <span className="text-[8px] font-bold text-slate-400 uppercase italic">点击解锁成就进行佩戴</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                         {[0, 1, 2].map((idx) => {
+                            const aid = selectedAchievementIds[idx];
+                            const achievement = achievements.find(a => a.id === aid);
+                            return (
+                               <div key={idx} className={`relative h-20 md:h-24 rounded-2xl border-2 flex items-center justify-center transition-all overflow-hidden ${achievement ? 'bg-indigo-600 border-indigo-700 text-white shadow-lg' : 'bg-slate-50 border-dashed border-slate-200 text-slate-300'}`}>
+                                  {achievement ? (
+                                     <div className="p-4 flex items-center gap-3 w-full">
+                                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+                                           <Star size={20} fill="currentColor" />
+                                        </div>
+                                        <div className="min-w-0">
+                                           <p className="font-black text-xs uppercase truncate leading-tight">{achievement.name}</p>
+                                           <p className="text-[7px] font-bold uppercase opacity-60 truncate">{achievement.condition}</p>
+                                        </div>
+                                        <button onClick={() => toggleAchievement(achievement.id)} className="absolute top-2 right-2 p-1 hover:bg-black/20 rounded-full transition-colors"><X size={12}/></button>
+                                     </div>
+                                  ) : (
+                                     <div className="flex flex-col items-center gap-1 opacity-40">
+                                        <Target size={20} />
+                                        <span className="text-[8px] font-black uppercase tracking-widest">EMPTY SLOT</span>
+                                     </div>
+                                  )}
+                               </div>
+                            );
+                         })}
+                      </div>
+                      {/* Selection Area if choosing */}
+                      <div className="flex gap-2 overflow-x-auto pb-2 px-1">
+                         {achievements.map(a => {
+                            const isSelected = selectedAchievementIds.includes(a.id);
+                            return (
+                               <button 
+                                  key={a.id} 
+                                  onClick={() => toggleAchievement(a.id)}
+                                  className={`shrink-0 px-4 py-2 rounded-full text-[9px] font-black uppercase italic tracking-widest border transition-all ${
+                                     isSelected ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300'
+                                  }`}
+                               >
+                                  {a.name}
+                               </button>
+                            );
+                         })}
+                      </div>
+                   </div>
+
+                   {/* Stamp Collection Preview */}
+                   <div className="space-y-4 pt-4 border-t border-slate-100">
+                      <div className="flex items-center justify-between px-2">
+                         <h4 className="text-[10px] font-black uppercase text-slate-900 tracking-widest flex items-center gap-2 italic"><BookOpen size={14} className="text-indigo-500" /> 我的集邮册 ({stamps.length})</h4>
+                         <div className="flex items-center gap-3">
+                            <span className="text-[8px] font-black uppercase text-slate-400 italic">在概况页展示</span>
+                            <button 
+                               onClick={() => handleUpdateSettings({ show_collector_avatars: user.show_collector_avatars === 1 ? 0 : 1 })}
+                               className={`w-10 h-5 rounded-full transition-all relative ${user.show_collector_avatars === 1 ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                            >
+                               <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${user.show_collector_avatars === 1 ? 'left-6' : 'left-1'}`}></div>
+                            </button>
+                         </div>
+                      </div>
+                      
+                      {user.show_collector_avatars === 1 && (
+                         <div className="bg-slate-50 rounded-3xl p-6 md:p-8 border border-slate-100 shadow-inner">
+                            <div className="flex flex-wrap gap-3 md:gap-4 justify-center md:justify-start">
+                               {stamps.map((s, i) => (
+                                  <div key={i} className="group relative flex flex-col items-center gap-1">
+                                     <div className={`w-10 h-10 md:w-14 md:h-14 rounded-full overflow-hidden border-2 transition-all group-hover:scale-110 group-hover:rotate-6 shadow-md ${s.team === 'red' ? 'border-red-400' : s.team === 'blue' ? 'border-blue-400' : 'border-slate-300'}`}>
+                                        {s.avatar_url ? (
+                                           <img src={s.avatar_url} alt={s.username} className="w-full h-full object-cover" />
+                                        ) : (
+                                           <div className="w-full h-full bg-white flex items-center justify-center text-slate-300"><User size={20} /></div>
+                                        )}
+                                     </div>
+                                     <span className="text-[7px] font-black uppercase text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity absolute -bottom-4 bg-slate-900 text-white px-1.5 py-0.5 rounded pointer-events-none z-10 whitespace-nowrap">{s.username || 'System'}</span>
+                                  </div>
+                               ))}
+                               {stamps.length === 0 && (
+                                  <div className="w-full py-8 text-center text-[10px] font-black uppercase text-slate-300 italic tracking-widest">你的集邮册还是空的</div>
+                               )}
+                            </div>
+                         </div>
+                      )}
+                      {user.show_collector_avatars !== 1 && (
+                         <div className="bg-slate-100/50 rounded-3xl py-12 text-center border-2 border-dashed border-slate-200">
+                            <ShieldCheck size={32} className="mx-auto text-slate-300 mb-2 opacity-50" />
+                            <p className="text-[10px] font-black uppercase text-slate-400 italic tracking-widest">集邮展示已关闭</p>
+                         </div>
+                      )}
+                   </div>
+
+                   <div className="md:hidden pt-4 flex flex-col gap-3">
+                      <a href="/api/auth/logout" className="w-full py-4 bg-red-600 text-white rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all"><LogOut size={16} /> LOGOUT 登出</a>
                    </div>
                 </div>
              </div>
