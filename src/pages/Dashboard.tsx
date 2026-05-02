@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { 
   Award, Trophy, Zap, LogOut, Settings, LayoutDashboard, Calendar, Users, 
-  MapPin, ChevronRight, Star, User, BookOpen, Target, ShieldCheck, Activity, Swords, HelpCircle, QrCode, Scan, Camera, X, Upload, Info, Check, Edit
+  MapPin, ChevronRight, Star, User, BookOpen, Target, ShieldCheck, Activity, Swords, HelpCircle, QrCode, Scan, Camera, X, Upload, Info, Check, Edit, Clock
 } from 'lucide-react';
 import { RegistrationPage } from './Registration';
 import { QRCodeSVG } from 'qrcode.react';
@@ -457,6 +457,16 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
                                {g.status === 'recruiting' ? '招募中' : '进行中'}
                             </Badge>
                             <h3 className="font-black text-xl md:text-2xl uppercase tracking-tighter text-slate-900">{g.title}</h3>
+                         </div>
+                         <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                            <div className="flex items-center gap-1.5 text-slate-400 group-hover:text-purple-600 transition-colors">
+                               <Calendar size={12} className="shrink-0" />
+                               <span className="text-[10px] font-black italic uppercase tracking-tighter">{g.start_date}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-slate-400 group-hover:text-purple-600 transition-colors">
+                               <Clock size={12} className="shrink-0" />
+                               <span className="text-[10px] font-black italic uppercase tracking-tighter">{g.start_time}</span>
+                            </div>
                          </div>
                          <div className="space-y-2">
                             <p className="text-xs md:text-sm font-bold text-slate-400 leading-relaxed italic border-l-4 border-purple-500 pl-3 md:pl-4">{g.short_desc}</p>
