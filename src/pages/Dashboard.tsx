@@ -153,6 +153,7 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
   const [showScanner, setShowScanner] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'challenges' | 'achievements' | 'stamps' | 'inventory' | 'profile'>('home');
   const [inventorySubTab, setInventorySubTab] = useState<'team' | 'gallery'>('team');
+  const [achievementSubTab, setAchievementSubTab] = useState<'all' | 'earned' | 'unearned'>('earned');
   const [manualScanId, setManualScanId] = useState('');
 
   const stampsOpen = config?.stamps_open !== 'false';
@@ -345,7 +346,7 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
 
              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center gap-3 group hover:border-indigo-100 transition-all"><div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner"><BookOpen size={20}/></div><span className="text-[9px] font-black uppercase tracking-widest text-slate-400 text-center">集邮进度</span><span className="text-xl font-black text-slate-900 tabular-nums">{stamps.length}</span></div>
-                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center gap-3 group hover:border-indigo-100 transition-all"><div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner"><Trophy size={20}/></div><span className="text-[9px] font-black uppercase tracking-widest text-slate-400 text-center">解锁成就</span><span className="text-xl font-black text-slate-900 tabular-nums">{achievements.length}</span></div>
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center gap-3 group hover:border-indigo-100 transition-all"><div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner"><Trophy size={20}/></div><span className="text-[9px] font-black uppercase tracking-widest text-slate-400 text-center">解锁成就</span><span className="text-xl font-black text-slate-900 tabular-nums">{achievements.filter(a => a.is_earned).length}</span></div>
                 <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center gap-3 group hover:border-indigo-100 transition-all"><div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner"><Zap size={20}/></div><span className="text-[9px] font-black uppercase tracking-widest text-slate-400 text-center">活跃挑战</span><span className="text-xl font-black text-slate-900 tabular-nums">{minigames.filter(g=>g.is_joined).length}</span></div>
                 <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center gap-3 group hover:border-indigo-100 transition-all"><div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner"><Activity size={20}/></div><span className="text-[9px] font-black uppercase tracking-widest text-slate-400 text-center">系统状态</span><span className="text-xl font-black text-slate-900">SYNCED</span></div>
              </div>
@@ -524,18 +525,34 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
 
         {activeTab === 'achievements' && (
           <div className="space-y-8 md:space-y-12 animate-in slide-in-from-right-4 duration-500">
-             <div className="flex items-center gap-3 md:gap-4 px-1 md:px-2">
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-amber-100 text-amber-600 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg"><Trophy size={20} fill="currentColor" className="w-5 h-5 md:w-6 md:h-6" /></div>
-                <div>
-                   <h2 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase text-slate-900">成就中心 HUB</h2>
-                   <p className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Medals & Collection</p>
+             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
+                <div className="flex items-center gap-3 md:gap-4">
+                   <div className="w-10 h-10 md:w-12 md:h-12 bg-amber-100 text-amber-600 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg"><Trophy size={20} fill="currentColor" className="w-5 h-5 md:w-6 md:h-6" /></div>
+                   <div>
+                      <h2 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase text-slate-900">成就中心 HUB</h2>
+                      <p className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Medals & Collection</p>
+                   </div>
+                </div>
+                <div className="bg-slate-100 p-1 rounded-xl flex gap-1 w-full md:w-auto">
+                   <button onClick={() => setAchievementSubTab('earned')} className={`flex-1 md:flex-none px-4 md:px-6 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${achievementSubTab === 'earned' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>已获得</button>
+                   <button onClick={() => setAchievementSubTab('unearned')} className={`flex-1 md:flex-none px-4 md:px-6 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${achievementSubTab === 'unearned' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>未获得</button>
+                   <button onClick={() => setAchievementSubTab('all')} className={`flex-1 md:flex-none px-4 md:px-6 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${achievementSubTab === 'all' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>全部</button>
                 </div>
              </div>
 
              <div className="space-y-4 md:space-y-6">
-                <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2 px-1 md:px-2"><Star size={12} className="text-amber-500" /> 全部成就 ({achievements.length})</h3>
+                <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2 px-1 md:px-2">
+                   <Star size={12} className="text-amber-500" /> 
+                   {achievementSubTab === 'earned' ? '已解锁' : achievementSubTab === 'unearned' ? '待解锁' : '全部成就'}
+                </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                   {achievements.map(a => {
+                   {achievements
+                    .filter(a => {
+                       if (achievementSubTab === 'earned') return !!a.is_earned;
+                       if (achievementSubTab === 'unearned') return !a.is_earned;
+                       return true;
+                    })
+                    .map(a => {
                       const isEarned = !!a.is_earned;
                       const isHidden = a.is_hidden === 1;
                       const displayCondition = (isHidden && !isEarned) ? "???" : a.condition;

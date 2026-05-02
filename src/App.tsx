@@ -47,13 +47,17 @@ function App() {
       
       if (authRes.ok) {
         const authData = await authRes.json();
-        if (authData.user) {
-          if (!isInitial) {
-             const fresh = authData.achievements.filter((a: Achievement) => !prevAchievementIds.current.has(a.id));
-             if (fresh.length > 0) setNewAchievements(prev => [...prev, ...fresh]);
-          }
-          authData.achievements.forEach((a: Achievement) => prevAchievementIds.current.add(a.id));
-          setAuth(authData);
+        // Check for new achievements to toast
+        const fresh = authData.achievements.filter((a: any) => a.is_earned && !prevAchievementIds.current.has(a.id));
+        if (fresh.length > 0) setNewAchievements(prev => [...prev, ...fresh]);
+        }
+
+        // Update tracking set with currently earned achievements
+        authData.achievements
+        .filter((a: any) => a.is_earned)
+        .forEach((a: Achievement) => prevAchievementIds.current.add(a.id));
+
+        setAuth(authData);
         } else {
           setAuth(null);
         }

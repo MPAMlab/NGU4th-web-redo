@@ -56,7 +56,13 @@ export const onRequest: PagesFunction<{
     }
 
     const allAchievements = await env.DB.prepare(`
-      SELECT a.*, (ua.achievement_id IS NOT NULL) as is_earned
+      SELECT 
+        a.id, a.name, a.scene, a.is_hidden,
+        (ua.achievement_id IS NOT NULL) as is_earned,
+        CASE 
+          WHEN a.is_hidden = 1 AND ua.achievement_id IS NULL THEN '???' 
+          ELSE a.condition 
+        END as condition
       FROM ngu4th_achievements a
       LEFT JOIN ngu4th_user_achievements ua ON a.id = ua.achievement_id AND ua.kinde_id = ?
     `).bind(kindeId).all();
