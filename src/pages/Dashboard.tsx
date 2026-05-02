@@ -558,6 +558,7 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
                    {stamps.map((s, i) => {
                       const roleColor = !s.username ? 'bg-slate-100 text-slate-400 border-slate-200' : (s.role === 'admin' ? 'bg-amber-100 text-amber-600 border-amber-200' : (s.team === 'red' ? 'bg-red-50 text-red-600 border-red-100' : (s.team === 'blue' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-slate-100 text-slate-500 border-slate-200')));
+                      const roleText = s.team || (s.role === 'admin' ? 'Staff' : 'Player');
                       return (
                          <div key={i} className="bg-white p-3 md:p-4 rounded-full border border-slate-100 shadow-sm flex items-center gap-3 md:gap-4 group hover:border-indigo-200 transition-all pr-5 md:pr-6">
                             <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden bg-slate-100 border-2 border-white shadow-inner flex-shrink-0 group-hover:scale-110 transition-transform">
@@ -565,7 +566,7 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
                             </div>
                             <div className="min-w-0 flex-1">
                                <p className="font-black text-xs md:text-sm uppercase text-slate-900 truncate">{s.username || 'System'}</p>
-                               <div className={`mt-0.5 inline-block px-1.5 py-0.5 rounded-full text-[7px] font-black border ${roleColor} uppercase italic tracking-tighter`}>{s.team || 'Player'}</div>
+                               <div className={`mt-0.5 inline-block px-1.5 py-0.5 rounded-full text-[7px] font-black border ${roleColor} uppercase italic tracking-tighter`}>{roleText}</div>
                             </div>
                             <ShieldCheck size={14} className="text-indigo-600 opacity-20 group-hover:opacity-100 transition-opacity" />
                          </div>
@@ -731,7 +732,7 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
                                {user.team ? `${user.team.toUpperCase()} TEAM` : 'NO TEAM'}
                             </div>
                             <div className="px-3 py-1 rounded-full text-[9px] font-black uppercase italic tracking-widest bg-indigo-500/20 border border-indigo-500 text-indigo-400">
-                               {user.role}
+                               {user.role === 'admin' ? 'Staff' : 'Player'}
                             </div>
                          </div>
                       </div>
@@ -981,7 +982,7 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
                         {user.team ? `${user.team.toUpperCase()} TEAM` : 'NO TEAM'}
                      </div>
                      <div className="px-6 py-2 rounded-full text-sm font-black uppercase italic tracking-widest bg-indigo-500/20 border-2 border-indigo-500 text-indigo-400">
-                        {user.role.toUpperCase()}
+                        {user.role === 'admin' ? 'STAFF' : 'PLAYER'}
                      </div>
                   </div>
                </div>
@@ -1041,11 +1042,11 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
                      <BookOpen size={24} className="text-indigo-400" />
                      <h4 className="text-sm font-black uppercase tracking-[0.3em] text-slate-400">Stamp Collection Preview ({stamps.length})</h4>
                   </div>
-                  <div className="bg-white/5 border-2 border-white/10 p-10 rounded-[3rem] flex flex-wrap gap-5 justify-center md:justify-start">
+                  <div className="bg-white/5 border-2 border-white/10 p-10 rounded-[3rem] flex flex-wrap gap-5 justify-start">
                      {stamps.slice(0, 36).map((s, i) => (
-                        <div key={i} className={`w-14 h-14 rounded-full overflow-hidden border-2 shadow-lg ${s.team === 'red' ? 'border-red-400' : s.team === 'blue' ? 'border-blue-400' : 'border-slate-500'}`}>
+                        <div key={i} className={`w-14 h-14 rounded-full overflow-hidden border-2 shadow-lg ${s.role === 'admin' ? 'border-amber-400' : s.team === 'red' ? 'border-red-400' : s.team === 'blue' ? 'border-blue-400' : 'border-slate-500'}`}>
                            {s.avatar_url ? (
-                              <img src={getProxyUrl(s.avatar_url)} alt="Stamp" className="w-full h-full object-cover" />
+                              <img src={getProxyUrl(s.avatar_url)} alt="Stamp" className="w-full h-full object-cover" crossOrigin="anonymous" />
                            ) : (
                               <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-600"><User size={24} /></div>
                            )}
