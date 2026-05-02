@@ -47,14 +47,24 @@ function App() {
       
       if (authRes.ok) {
         const authData = await authRes.json();
-        // Check for new achievements to toast
-        const fresh = authData.achievements.filter((a: any) => a.is_earned && !prevAchievementIds.current.has(a.id));
-        if (fresh.length > 0) setNewAchievements(prev => [...prev, ...fresh]);
-
-        // Update tracking set with currently earned achievements
-        authData.achievements
+        
+        // 1. Get currently earned achievement IDs
+        const currentlyEarned = authData.achievements
           .filter((a: any) => a.is_earned)
-          .forEach((a: Achievement) => prevAchievementIds.current.add(a.id));
+          .map((a: any) => a.id);
+
+        // 2. If this is NOT the initial load, check for newly added achievements
+        if (!isInitial) {
+          const fresh = authData.achievements.filter((a: any) => 
+            a.is_earned && !prevAchievementIds.current.has(a.id)
+          );
+          if (fresh.length > 0) {
+            setNewAchievements(prev => [...prev, ...fresh]);
+          }
+        }
+
+        // 3. Update tracking set with all current achievements (crucial for both initial and subsequent)
+        currentlyEarned.forEach((id: number) => prevAchievementIds.current.add(id));
 
         setAuth(authData);
       } else {
