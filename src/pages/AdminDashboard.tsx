@@ -128,6 +128,7 @@ export const AdminDashboard = () => {
   const [editingTplId, setEditingTplId] = useState<number | null>(null);
   const [editTplForm, setEditTplForm] = useState<Partial<Achievement>>({});
   const [editingMinigame, setEditingMinigame] = useState<any | null>(null);
+  const [viewingParticipants, setViewingParticipants] = useState<any | null>(null);
   const [minigameLoading, setMinigameLoading] = useState(false);
 
   const [libraryFilter, setLibraryFilter] = useState<'all' | 'joker' | 'tarot' | 'fake'>('all');
@@ -423,12 +424,50 @@ export const AdminDashboard = () => {
                      <div className="p-4 bg-slate-50 border-t flex gap-2">
                         {g.status === 'recruiting' && <button onClick={()=>handleMinigameAction('start', { id: g.id })} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-black uppercase text-[9px] italic shadow-md">Start Recruiting</button>}
                         {g.status === 'active' && <button onClick={()=>setEditingMinigame({...g, showFinish: true})} className="flex-1 bg-emerald-600 text-white py-2 rounded-lg font-black uppercase text-[9px] italic shadow-md">Complete & Reward</button>}
+                        <button onClick={()=>setViewingParticipants(g)} title="View Participants" className="p-2 text-slate-400 hover:text-indigo-600"><Users size={14}/></button>
                         <button onClick={()=>setEditingMinigame(g)} className="p-2 text-slate-400 hover:text-indigo-600"><Edit size={14}/></button>
                         <button onClick={()=>{if(confirm('Delete?')) handleMinigameAction('delete', { id: g.id })}} className="p-2 text-slate-400 hover:text-red-600"><Trash2 size={14}/></button>
                      </div>
                   </div>
                ))}
             </div>
+
+            {viewingParticipants && (
+               <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-6 z-50">
+                  <div className="bg-white p-8 rounded-3xl border border-indigo-600 shadow-2xl max-w-md w-full space-y-6 animate-in zoom-in-95 max-h-[90vh] overflow-auto">
+                     <div className="flex justify-between items-center">
+                        <h3 className="font-black italic uppercase text-[10px] tracking-[0.2em] text-slate-400">
+                           PARTICIPANTS LIST - {viewingParticipants.title}
+                        </h3>
+                        <button onClick={()=>setViewingParticipants(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X size={16}/></button>
+                     </div>
+                     
+                     <div className="space-y-2">
+                        {minigameParticipants.filter(p => p.minigame_id === viewingParticipants.id).map((p, idx) => (
+                           <div key={p.user_id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                              <div className="flex items-center gap-3">
+                                 <span className="text-xs font-black text-slate-300 tabular-nums w-4">#{idx+1}</span>
+                                 <div className="flex flex-col">
+                                    <span className="font-black text-xs uppercase text-slate-900">{p.username}</span>
+                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{p.email || 'NO_EMAIL'}</span>
+                                 </div>
+                              </div>
+                              <Badge variant={p.team === 'red' ? 'default' : (p.team === 'blue' ? 'secondary' : 'outline')}>
+                                 {p.team || 'SPECTATOR'}
+                              </Badge>
+                           </div>
+                        ))}
+                        {minigameParticipants.filter(p => p.minigame_id === viewingParticipants.id).length === 0 && (
+                           <div className="text-center py-12 space-y-4">
+                              <Users size={40} className="mx-auto text-slate-200" />
+                              <p className="text-xs font-black text-slate-300 uppercase italic tracking-widest">No participants yet.</p>
+                           </div>
+                        )}
+                     </div>
+                     <button onClick={()=>setViewingParticipants(null)} className="w-full py-3 bg-slate-900 text-white rounded-xl font-black uppercase text-[9px] shadow-lg">Close View</button>
+                  </div>
+               </div>
+            )}
 
             {editingMinigame && (
                <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-6 z-50">
