@@ -13,6 +13,8 @@ export interface Achievement {
   condition: string;
   scene: string;
   earned_at?: string;
+  is_earned?: boolean | number;
+  is_hidden?: number;
 }
 
 interface User {
@@ -531,21 +533,27 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
              </div>
 
              <div className="space-y-4 md:space-y-6">
-                <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2 px-1 md:px-2"><Star size={12} className="text-amber-500" /> 我的收藏 ({achievements.length})</h3>
+                <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2 px-1 md:px-2"><Star size={12} className="text-amber-500" /> 全部成就 ({achievements.length})</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                   {achievements.map(a => (
-                      <div key={a.id} className="bg-white p-5 md:p-6 rounded-2xl md:rounded-[2rem] border border-slate-100 shadow-lg flex items-center gap-4 md:gap-6 group hover:border-amber-200 transition-all">
-                         <div className="w-12 h-12 md:w-14 md:h-14 bg-amber-50 text-amber-600 rounded-lg md:rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-md border border-amber-100/50">
-                            <Star size={20} fill="currentColor" className="w-5 h-5 md:w-6 md:h-6" />
+                   {achievements.map(a => {
+                      const isEarned = !!a.is_earned;
+                      const isHidden = a.is_hidden === 1;
+                      const displayCondition = (isHidden && !isEarned) ? "???" : a.condition;
+                      
+                      return (
+                         <div key={a.id} className={`bg-white p-5 md:p-6 rounded-2xl md:rounded-[2rem] border shadow-lg flex items-center gap-4 md:gap-6 group transition-all ${isEarned ? 'border-amber-100 hover:border-amber-200 opacity-100' : 'border-slate-100 grayscale opacity-60 hover:grayscale-0 hover:opacity-100'}`}>
+                            <div className={`w-12 h-12 md:w-14 md:h-14 rounded-lg md:rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-md border ${isEarned ? 'bg-amber-50 text-amber-600 border-amber-100/50' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                               <Star size={20} fill={isEarned ? "currentColor" : "none"} className="w-5 h-5 md:w-6 md:h-6" />
+                            </div>
+                            <div className="space-y-0.5 md:space-y-1">
+                               <p className={`font-black text-base md:text-lg uppercase leading-none ${isEarned ? 'text-slate-900' : 'text-slate-400'}`}>{a.name}</p>
+                               <p className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase italic leading-relaxed mt-1">{displayCondition}</p>
+                            </div>
                          </div>
-                         <div className="space-y-0.5 md:space-y-1">
-                            <p className="font-black text-base md:text-lg uppercase text-slate-900 leading-none">{a.name}</p>
-                            <p className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase italic leading-relaxed mt-1">{a.condition}</p>
-                         </div>
-                      </div>
-                   ))}
+                      );
+                   })}
                    {achievements.length === 0 && (
-                      <div className="col-span-full py-16 text-center opacity-20 italic font-black uppercase text-xl md:text-2xl tracking-widest">暂无获得成就</div>
+                      <div className="col-span-full py-16 text-center opacity-20 italic font-black uppercase text-xl md:text-2xl tracking-widest">暂无成就数据</div>
                    )}
                 </div>
              </div>

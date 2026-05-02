@@ -55,13 +55,13 @@ export const onRequest: PagesFunction<{
       }
     }
 
-    const achievements = await env.DB.prepare(`
-      SELECT a.* FROM ngu4th_achievements a
-      JOIN ngu4th_user_achievements ua ON a.id = ua.achievement_id
-      WHERE ua.kinde_id = ?
+    const allAchievements = await env.DB.prepare(`
+      SELECT a.*, (ua.achievement_id IS NOT NULL) as is_earned
+      FROM ngu4th_achievements a
+      LEFT JOIN ngu4th_user_achievements ua ON a.id = ua.achievement_id AND ua.kinde_id = ?
     `).bind(kindeId).all();
 
-    return new Response(JSON.stringify({ user, achievements: achievements.results }), {
+    return new Response(JSON.stringify({ user, achievements: allAchievements.results }), {
       headers: { "Content-Type": "application/json" }
     });
   } catch (e) {
