@@ -7,6 +7,8 @@ import { RegistrationPage } from './Registration';
 import { QRCodeSVG } from 'qrcode.react';
 import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
 
+import { toPng } from 'html-to-image';
+
 export interface Achievement {
   id: number;
   name: string;
@@ -155,6 +157,32 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
   const [inventorySubTab, setInventorySubTab] = useState<'team' | 'gallery'>('team');
   const [achievementSubTab, setAchievementSubTab] = useState<'all' | 'earned' | 'unearned'>('earned');
   const [manualScanId, setManualScanId] = useState('');
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  const handleExportImage = async () => {
+    if (!profileRef.current) return;
+    setLoading(true);
+    try {
+      // Ensure fonts and images are loaded
+      const dataUrl = await toPng(profileRef.current, {
+        cacheBust: true,
+        width: 800,
+        height: 1200,
+        style: {
+          display: 'block',
+        }
+      });
+      const link = document.createElement('a');
+      link.download = `NGU4th_Profile_${user.username}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error(err);
+      alert("生成图片失败，可能是头像跨域限制。如果无法下载，请尝试截屏。");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const stampsOpen = config?.stamps_open !== 'false';
 
@@ -647,28 +675,30 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
                       </div>
                       <div className="hidden md:flex flex-col items-end gap-3 shrink-0">
                          <a href="/api/auth/logout" className="px-4 py-2 bg-red-600/20 text-red-500 border border-red-600/30 rounded-xl hover:bg-red-600 hover:text-white transition-all font-black text-[10px] uppercase flex items-center gap-2 italic tracking-tighter"><LogOut size={14} /> LOGOUT</a>
+                         <button onClick={handleExportImage} disabled={loading} className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-all font-black text-[10px] uppercase flex items-center gap-2 italic tracking-tighter shadow-lg disabled:opacity-50"><Camera size={14} /> 导出分享图</button>
                          <Badge variant="outline" className="border-white/10 text-white/30 uppercase text-[8px] font-mono">{user.kinde_id}</Badge>
                       </div>
                    </div>
                 </div>
 
                 <div className="p-4 md:p-8 space-y-6 md:space-y-8">
+                   <div className="md:hidden flex gap-2">
+                      <button onClick={handleExportImage} disabled={loading} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all disabled:opacity-50"><Camera size={16} /> 导出分享图 EXPORT</button>
+                   </div>
                    {/* Contribution Stats */}
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-inner flex flex-col items-center gap-2 group hover:border-indigo-100 transition-all">
-                         <Target size={24} className="text-indigo-500 mb-1" />
-                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">个人贡献分</span>
-                         <span className="text-4xl font-black italic text-slate-900 tabular-nums">{(user.contribution || 0).toLocaleString()}</span>
-                         <div className="w-12 h-1 bg-indigo-500/20 rounded-full mt-2 overflow-hidden">
-                            <div className="h-full bg-indigo-500 w-1/2"></div>
+                   <div className="grid grid-cols-2 gap-3 md:gap-4">
+                      <div className="bg-slate-50 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100 shadow-inner flex items-center gap-3 group hover:border-indigo-100 transition-all">
+                         <div className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center shrink-0 shadow-sm"><Target size={20} /></div>
+                         <div className="min-w-0">
+                            <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-slate-400 italic block">个人贡献分</span>
+                            <span className="text-lg md:text-2xl font-black italic text-slate-900 tabular-nums">{(user.contribution || 0).toLocaleString()}</span>
                          </div>
                       </div>
-                      <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-inner flex flex-col items-center gap-2 group hover:border-indigo-100 transition-all">
-                         <Users size={24} className="text-emerald-500 mb-1" />
-                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">战队总得分</span>
-                         <span className="text-4xl font-black italic text-slate-900 tabular-nums">{(user.team_contribution || 0).toLocaleString()}</span>
-                         <div className="w-12 h-1 bg-emerald-500/20 rounded-full mt-2 overflow-hidden">
-                            <div className="h-full bg-emerald-500 w-3/4"></div>
+                      <div className="bg-slate-50 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100 shadow-inner flex items-center gap-3 group hover:border-emerald-100 transition-all">
+                         <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center shrink-0 shadow-sm"><Users size={20} /></div>
+                         <div className="min-w-0">
+                            <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-slate-400 italic block">战队总得分</span>
+                            <span className="text-lg md:text-2xl font-black italic text-slate-900 tabular-nums">{(user.team_contribution || 0).toLocaleString()}</span>
                          </div>
                       </div>
                    </div>
@@ -835,6 +865,128 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
                 {activeTab === tab.id && <div className="absolute bottom-0 w-1 h-1 bg-indigo-500 rounded-full animate-in fade-in slide-in-from-bottom-2"></div>}
               </button>
             ))}
+         </div>
+      </div>
+
+      {/* Hidden Share Card Template */}
+      <div className="fixed -left-[2000px] top-0 pointer-events-none">
+         <div ref={profileRef} className="w-[800px] bg-slate-950 p-12 text-white relative overflow-hidden flex flex-col gap-10">
+            {/* Background Decoration */}
+            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/20 rounded-full blur-[120px] -mr-64 -mt-64"></div>
+            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-600/10 rounded-full blur-[100px] -ml-40 -mb-40"></div>
+            
+            {/* Header */}
+            <div className="relative z-10 flex justify-between items-start">
+               <div className="space-y-1">
+                  <h1 className="text-3xl font-black italic tracking-tighter uppercase text-indigo-400">Never Give Up 4th</h1>
+                  <p className="text-[10px] font-bold tracking-[0.4em] text-slate-500 uppercase">Official Player Certificate</p>
+               </div>
+               <img src="/logo.webp" alt="Logo" className="w-20 h-20 object-contain drop-shadow-[0_0_15px_rgba(129,140,248,0.3)]" />
+            </div>
+
+            {/* Profile Info */}
+            <div className="relative z-10 flex items-center gap-10">
+               <div className="w-48 h-48 rounded-[3rem] bg-slate-800 border-4 border-white/10 overflow-hidden shadow-2xl">
+                  {user.avatar_url ? (
+                     <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                     <div className="w-full h-full flex items-center justify-center text-slate-600"><User size={80} /></div>
+                  )}
+               </div>
+               <div className="space-y-4 flex-1">
+                  <h2 className="text-7xl font-black italic uppercase tracking-tighter leading-none">{user.username}</h2>
+                  <div className="flex gap-3">
+                     <div className={`px-6 py-2 rounded-full text-sm font-black uppercase italic tracking-widest border-2 ${user.team === 'red' ? 'bg-red-500/20 border-red-500 text-red-400' : user.team === 'blue' ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'bg-slate-500/20 border-slate-500 text-slate-400'}`}>
+                        {user.team ? `${user.team.toUpperCase()} TEAM` : 'NO TEAM'}
+                     </div>
+                     <div className="px-6 py-2 rounded-full text-sm font-black uppercase italic tracking-widest bg-indigo-500/20 border-2 border-indigo-500 text-indigo-400">
+                        {user.role.toUpperCase()}
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            {/* Stats Row */}
+            <div className="relative z-10 grid grid-cols-2 gap-8">
+               <div className="bg-white/5 border-2 border-white/10 p-10 rounded-[2.5rem] shadow-xl backdrop-blur-sm">
+                  <div className="flex items-center gap-4 mb-4">
+                     <div className="w-12 h-12 bg-indigo-500 text-white rounded-2xl flex items-center justify-center"><Target size={28} /></div>
+                     <span className="text-xs font-black uppercase tracking-widest text-slate-400">Personal Contribution</span>
+                  </div>
+                  <span className="text-6xl font-black italic text-white tabular-nums">{(user.contribution || 0).toLocaleString()}</span>
+               </div>
+               <div className="bg-white/5 border-2 border-white/10 p-10 rounded-[2.5rem] shadow-xl backdrop-blur-sm">
+                  <div className="flex items-center gap-4 mb-4">
+                     <div className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center"><Users size={28} /></div>
+                     <span className="text-xs font-black uppercase tracking-widest text-slate-400">Team Total Score</span>
+                  </div>
+                  <span className="text-6xl font-black italic text-white tabular-nums">{(user.team_contribution || 0).toLocaleString()}</span>
+               </div>
+            </div>
+
+            {/* Achievements */}
+            <div className="relative z-10 space-y-6">
+               <div className="flex items-center gap-4 px-2">
+                  <Award size={24} className="text-amber-500" />
+                  <h4 className="text-sm font-black uppercase tracking-[0.3em] text-slate-400">Wearing Achievements</h4>
+               </div>
+               <div className="grid grid-cols-1 gap-4">
+                  {selectedAchievementIds.length > 0 ? selectedAchievementIds.map(aid => {
+                     const ach = achievements.find(a => a.id === aid);
+                     if (!ach) return null;
+                     return (
+                        <div key={aid} className="bg-indigo-600/40 border-2 border-indigo-500/30 p-8 rounded-[2rem] flex items-center gap-6 shadow-lg backdrop-blur-md">
+                           <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
+                              <Star size={32} fill="currentColor" className="text-white" />
+                           </div>
+                           <div>
+                              <p className="text-3xl font-black uppercase tracking-tight">{ach.name}</p>
+                              <p className="text-sm font-bold uppercase text-white/50 italic tracking-widest mt-1">{ach.condition}</p>
+                           </div>
+                        </div>
+                     );
+                  }) : (
+                     <div className="border-2 border-dashed border-white/10 p-12 rounded-[2rem] text-center opacity-30">
+                        <span className="text-xs font-black uppercase tracking-widest">No Achievements Selected</span>
+                     </div>
+                  )}
+               </div>
+            </div>
+
+            {/* Stamps Preview */}
+            {user.show_collector_avatars === 1 && stamps.length > 0 && (
+               <div className="relative z-10 space-y-6">
+                  <div className="flex items-center gap-4 px-2">
+                     <BookOpen size={24} className="text-indigo-400" />
+                     <h4 className="text-sm font-black uppercase tracking-[0.3em] text-slate-400">Stamp Collection Preview ({stamps.length})</h4>
+                  </div>
+                  <div className="bg-white/5 border-2 border-white/10 p-10 rounded-[3rem] flex flex-wrap gap-5 justify-center md:justify-start">
+                     {stamps.slice(0, 36).map((s, i) => (
+                        <div key={i} className={`w-14 h-14 rounded-full overflow-hidden border-2 shadow-lg ${s.team === 'red' ? 'border-red-400' : s.team === 'blue' ? 'border-blue-400' : 'border-slate-500'}`}>
+                           {s.avatar_url ? (
+                              <img src={s.avatar_url} alt="Stamp" className="w-full h-full object-cover" />
+                           ) : (
+                              <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-600"><User size={24} /></div>
+                           )}
+                        </div>
+                     ))}
+                     {stamps.length > 36 && (
+                        <div className="w-14 h-14 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-black border-2 border-white/20">+{stamps.length - 36}</div>
+                     )}
+                  </div>
+               </div>
+            )}
+
+            {/* Footer */}
+            <div className="mt-auto pt-10 border-t border-white/10 flex justify-between items-end opacity-40">
+               <div className="space-y-1">
+                  <p className="text-[10px] font-mono font-bold tracking-widest">USER_ID: {user.kinde_id}</p>
+                  <p className="text-[8px] font-black uppercase tracking-widest italic">NEVER GIVE UP 4TH EDITION • ENGINE_VERSION_0.9.4</p>
+               </div>
+               <div className="text-right">
+                  <p className="text-[8px] font-black uppercase tracking-[0.5em]">NGU4TH.MPAM-LAB.XYZ</p>
+               </div>
+            </div>
          </div>
       </div>
     </div>
