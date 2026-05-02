@@ -329,6 +329,9 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
     if (selectedAchievementIds.includes(id)) {
       newSelected = selectedAchievementIds.filter(aid => aid !== id);
     } else {
+      const achievement = achievements.find(a => a.id === id);
+      if (!achievement || !achievement.is_earned) return;
+
       if (selectedAchievementIds.length >= 3) {
         alert("最多只能佩戴3个成就");
         return;
@@ -781,14 +784,14 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
                          })}
                       </div>
                       {/* Selection Area if choosing */}
-                      <div className="flex gap-2 overflow-x-auto pb-2 px-1">
-                         {achievements.map(a => {
+                      <div className="flex flex-wrap gap-2 pb-2 px-1">
+                         {achievements.filter(a => !!a.is_earned).map(a => {
                             const isSelected = selectedAchievementIds.includes(a.id);
                             return (
                                <button 
                                   key={a.id} 
                                   onClick={() => toggleAchievement(a.id)}
-                                  className={`shrink-0 px-4 py-2 rounded-full text-[9px] font-black uppercase italic tracking-widest border transition-all ${
+                                  className={`px-4 py-2 rounded-full text-[9px] font-black uppercase italic tracking-widest border transition-all ${
                                      isSelected ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300'
                                   }`}
                                >
