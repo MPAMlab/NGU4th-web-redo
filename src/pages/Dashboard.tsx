@@ -186,6 +186,14 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
 
   const stampsOpen = config?.stamps_open !== 'false';
 
+  const getProxyUrl = (url?: string) => {
+    if (!url || url.trim() === "") return "";
+    if (url.startsWith('http')) {
+      return `/api/proxy-image?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+  };
+
   const fetchData = async () => {
     try {
       const [miniRes, stampRes, invRes, cardRes, rankRes] = await Promise.all([
@@ -888,7 +896,7 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
             <div className="relative z-10 flex items-center gap-10">
                <div className="w-48 h-48 rounded-[3rem] bg-slate-800 border-4 border-white/10 overflow-hidden shadow-2xl">
                   {user.avatar_url ? (
-                     <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                     <img src={getProxyUrl(user.avatar_url)} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
                      <div className="w-full h-full flex items-center justify-center text-slate-600"><User size={80} /></div>
                   )}
@@ -964,7 +972,7 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
                      {stamps.slice(0, 36).map((s, i) => (
                         <div key={i} className={`w-14 h-14 rounded-full overflow-hidden border-2 shadow-lg ${s.team === 'red' ? 'border-red-400' : s.team === 'blue' ? 'border-blue-400' : 'border-slate-500'}`}>
                            {s.avatar_url ? (
-                              <img src={s.avatar_url} alt="Stamp" className="w-full h-full object-cover" />
+                              <img src={getProxyUrl(s.avatar_url)} alt="Stamp" className="w-full h-full object-cover" />
                            ) : (
                               <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-600"><User size={24} /></div>
                            )}
