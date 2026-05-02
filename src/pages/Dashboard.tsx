@@ -157,6 +157,7 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
   const [inventorySubTab, setInventorySubTab] = useState<'team' | 'gallery'>('team');
   const [achievementSubTab, setAchievementSubTab] = useState<'all' | 'earned' | 'unearned'>('earned');
   const [manualScanId, setManualScanId] = useState('');
+  const [exportPreviewUrl, setExportPreviewUrl] = useState<string | null>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
   const handleExportImage = async () => {
@@ -172,13 +173,10 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
           display: 'block',
         }
       });
-      const link = document.createElement('a');
-      link.download = `NGU4th_Profile_${user.username}.png`;
-      link.href = dataUrl;
-      link.click();
+      setExportPreviewUrl(dataUrl);
     } catch (err) {
       console.error(err);
-      alert("生成图片失败，可能是头像跨域限制。如果无法下载，请尝试截屏。");
+      alert("生成图片失败，请检查网络后重试");
     } finally {
       setLoading(false);
     }
@@ -858,6 +856,25 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
               </div>
           </div>
         )}
+
+        {exportPreviewUrl && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-300">
+             <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-xl" onClick={() => setExportPreviewUrl(null)}></div>
+             <div className="relative z-10 max-w-sm w-full animate-in zoom-in-95 duration-300 flex flex-col items-center gap-6">
+                <div className="bg-white p-2 rounded-3xl shadow-2xl overflow-hidden border-4 border-indigo-500/30">
+                   <img src={exportPreviewUrl} alt="Export Preview" className="w-full h-auto rounded-2xl" />
+                </div>
+                <div className="text-center space-y-2">
+                   <p className="text-white font-black uppercase tracking-widest text-xs flex items-center gap-2 justify-center">
+                      <Info size={14} className="text-indigo-400" /> 长按上方图片保存到相册
+                   </p>
+                   <button onClick={() => setExportPreviewUrl(null)} className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all">
+                      关闭预览 CLOSE
+                   </button>
+                </div>
+             </div>
+          </div>
+        )}
       </div>
 
       <div className="fixed bottom-0 left-0 w-full z-50 px-3 pb-3">
@@ -889,7 +906,7 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
                   <h1 className="text-3xl font-black italic tracking-tighter uppercase text-indigo-400">Never Give Up 4th</h1>
                   <p className="text-[10px] font-bold tracking-[0.4em] text-slate-500 uppercase">Official Player Certificate</p>
                </div>
-               <img src="/logo.webp" alt="Logo" className="w-20 h-20 object-contain drop-shadow-[0_0_15px_rgba(129,140,248,0.3)]" />
+               <img src="/logo.webp" alt="Logo" className="w-32 h-32 object-contain drop-shadow-[0_0_25px_rgba(129,140,248,0.4)]" />
             </div>
 
             {/* Profile Info */}
@@ -988,13 +1005,17 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
             {/* Footer */}
             <div className="mt-auto pt-10 border-t border-white/10 flex justify-between items-end opacity-40">
                <div className="space-y-1">
-                  <p className="text-[10px] font-mono font-bold tracking-widest">USER_ID: {user.kinde_id}</p>
                   <p className="text-[8px] font-black uppercase tracking-widest italic">NEVER GIVE UP 4TH EDITION • ENGINE_VERSION_0.9.4</p>
                </div>
                <div className="text-right">
                   <p className="text-[8px] font-black uppercase tracking-[0.5em]">NGU4TH.MPAM-LAB.XYZ</p>
                </div>
             </div>
+         </div>
+      </div>
+    </div>
+  );
+};
          </div>
       </div>
     </div>
