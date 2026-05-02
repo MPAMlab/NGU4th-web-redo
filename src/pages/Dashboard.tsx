@@ -36,6 +36,7 @@ interface Minigame {
   id: number;
   title: string;
   short_desc: string;
+  detailed_desc?: string;
   start_date: string;
   start_time: string;
   max_players: number;
@@ -457,7 +458,12 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
                             </Badge>
                             <h3 className="font-black text-xl md:text-2xl uppercase tracking-tighter text-slate-900">{g.title}</h3>
                          </div>
-                         <p className="text-xs md:text-sm font-bold text-slate-400 leading-relaxed italic border-l-4 border-purple-500 pl-3 md:pl-4">{g.short_desc}</p>
+                         <div className="space-y-2">
+                            <p className="text-xs md:text-sm font-bold text-slate-400 leading-relaxed italic border-l-4 border-purple-500 pl-3 md:pl-4">{g.short_desc}</p>
+                            {g.detailed_desc && (
+                               <p className="text-[10px] md:text-xs text-slate-500 leading-relaxed pl-4">{g.detailed_desc}</p>
+                            )}
+                         </div>
                          <div className="flex gap-4 md:gap-6 mt-2 md:mt-4">
                             <div className="flex flex-col"><span className="text-[7px] md:text-[8px] font-black uppercase text-slate-400 tracking-widest">已报名人数</span><span className="text-base md:text-lg font-black italic tabular-nums">{g.participant_count} / {g.max_players}</span></div>
                             <div className="flex flex-col"><span className="text-[7px] md:text-[8px] font-black uppercase text-slate-400 tracking-widest">优胜奖励</span><span className="text-base md:text-lg font-black italic text-purple-600 uppercase">{g.fake_card_name || '???'}</span></div>
