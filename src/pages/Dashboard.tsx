@@ -79,33 +79,71 @@ const Badge = ({ children, className, variant = 'default' }: { children: React.R
 // QR Scanner Component
 const QRScannerComp = ({ onScan }: { onScan: (id: string) => void }) => {
   const [active, setActive] = useState(false);
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
     if (active) {
-      scannerRef.current = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
-      scannerRef.current.render((decodedText) => {
-        onScan(decodedText);
-        setActive(false);
-      }, (err) => {});
-    } else if (scannerRef.current) {
-      scannerRef.current.clear();
+      const scanner = new Html5Qrcode("reader");
+      scannerRef.current = scanner;
+      scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        (decodedText) => {
+          onScan(decodedText);
+          setActive(false);
+        },
+        () => {}
+      ).catch(err => {
+        console.error("Camera start error", err);
+      });
+    } else if (scannerRef.current && scannerRef.current.isScanning) {
+      scannerRef.current.stop().then(() => {
+        scannerRef.current?.clear();
+      }).catch(err => console.error("Scanner stop error", err));
     }
-    return () => { if (scannerRef.current) scannerRef.current.clear(); };
+    return () => {
+      if (scannerRef.current && scannerRef.current.isScanning) {
+        scannerRef.current.stop().catch(err => console.error(err));
+      }
+    };
   }, [active]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const html5QrCode = new Html5Qrcode("reader-hidden");
+    try {
+      const decodedText = await html5QrCode.scanFile(file, true);
+      onScan(decodedText);
+    } catch (err) {
+      alert("无法识别图片中的二维码");
+    } finally {
+      html5QrCode.clear();
+    }
+  };
 
   return (
     <div className="space-y-4">
       {active ? (
         <div className="relative">
-          <div id="reader" className="overflow-hidden rounded-2xl border-4 border-indigo-500 shadow-2xl bg-black"></div>
+          <div id="reader" className="overflow-hidden rounded-2xl border-4 border-indigo-500 shadow-2xl bg-black aspect-square"></div>
           <button onClick={() => setActive(false)} className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full"><X size={20}/></button>
         </div>
       ) : (
-        <button onClick={() => setActive(true)} className="w-full bg-indigo-600 hover:bg-indigo-500 py-5 rounded-[1.5rem] font-black uppercase shadow-xl transition-all flex items-center justify-center gap-3 italic text-white">
-           <Camera size={20}/> 开启摄像头扫码 START CAMERA
-        </button>
+        <div className="grid grid-cols-1 gap-3">
+          <button onClick={() => setActive(true)} className="w-full bg-indigo-600 hover:bg-indigo-500 py-5 rounded-[1.5rem] font-black uppercase shadow-xl transition-all flex items-center justify-center gap-3 italic text-white">
+             <Camera size={20}/> 开启摄像头扫码 START CAMERA
+          </button>
+          <div className="relative">
+             <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+             <button className="w-full bg-slate-800 hover:bg-slate-700 py-5 rounded-[1.5rem] font-black uppercase shadow-xl transition-all flex items-center justify-center gap-3 italic text-white">
+                <Upload size={20}/> 上传图片识别 UPLOAD IMAGE
+             </button>
+          </div>
+        </div>
       )}
+      <div id="reader-hidden" className="hidden"></div>
     </div>
   );
 };
@@ -1011,11 +1049,6 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
                   <p className="text-[8px] font-black uppercase tracking-[0.5em]">NGU4TH.MPAM-LAB.XYZ</p>
                </div>
             </div>
-         </div>
-      </div>
-    </div>
-  );
-};
          </div>
       </div>
     </div>
