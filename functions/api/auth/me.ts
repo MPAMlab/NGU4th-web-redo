@@ -41,14 +41,18 @@ export const onRequest: PagesFunction<{
       const { checkAchievements } = await import("../../lib/achievements");
       await checkAchievements(env.DB, kindeId, { type: 'login' });
 
-      // Fetch additional stats
-      const contributionRes: any = await env.DB.prepare("SELECT SUM(total_score) as total FROM ngu4th_rounds WHERE player_id = ?")
-        .bind(kindeId).first();
+      // Fetch Active Game for scoped stats
+      const activeGame: any = await env.DB.prepare("SELECT id FROM ngu4th_games WHERE status = 'active'").first();
+      const gameId = activeGame?.id || -1;
+
+      // Fetch additional stats scoped to active game
+      const contributionRes: any = await env.DB.prepare("SELECT SUM(total_score) as total FROM ngu4th_rounds WHERE player_id = ? AND game_id = ?")
+        .bind(kindeId, gameId).first();
       user.contribution = contributionRes?.total || 0;
 
       if (user.team) {
-        const teamContributionRes: any = await env.DB.prepare("SELECT SUM(total_score) as total FROM ngu4th_rounds WHERE team = ?")
-          .bind(user.team).first();
+        const teamContributionRes: any = await env.DB.prepare("SELECT SUM(total_score) as total FROM ngu4th_rounds WHERE team = ? AND game_id = ?")
+          .bind(user.team, gameId).first();
         user.team_contribution = teamContributionRes?.total || 0;
       } else {
         user.team_contribution = 0;
