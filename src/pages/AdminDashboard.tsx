@@ -129,6 +129,7 @@ export const AdminDashboard = () => {
   const [editTplForm, setEditTplForm] = useState<Partial<Achievement>>({});
   const [editingMinigame, setEditingMinigame] = useState<any | null>(null);
   const [viewingParticipants, setViewingParticipants] = useState<any | null>(null);
+  const [selectedWinnerId, setSelectedWinnerId] = useState<string | null>(null);
   const [minigameLoading, setMinigameLoading] = useState(false);
 
   const [libraryFilter, setLibraryFilter] = useState<'all' | 'joker' | 'tarot' | 'fake'>('all');
@@ -482,18 +483,58 @@ export const AdminDashboard = () => {
                               <label className="text-[8px] font-black uppercase text-slate-400">Choose Winner from Participants</label>
                               <div className="grid grid-cols-1 gap-2">
                                  {minigameParticipants.filter(p => p.minigame_id === editingMinigame.id).map(p => (
-                                    <button key={p.user_id} onClick={()=>handleMinigameAction('finish', { id: editingMinigame.id, winner_id: p.user_id })} className="flex items-center justify-between p-4 bg-slate-50 border-2 border-transparent hover:border-indigo-600 rounded-2xl group transition-all">
-                                       <div className="flex flex-col items-start"><span className="font-black text-xs uppercase">{p.username}</span><Badge variant={p.team === 'red' ? 'default' : 'secondary'}>{p.team}</Badge></div>
-                                       <Trophy size={16} className="text-slate-200 group-hover:text-indigo-600" />
+                                    <button 
+                                       key={p.user_id} 
+                                       onClick={()=>setSelectedWinnerId(p.user_id)} 
+                                       className={`flex items-center justify-between p-4 border-2 rounded-2xl group transition-all ${
+                                          selectedWinnerId === p.user_id 
+                                             ? 'bg-indigo-600 border-indigo-700 text-white shadow-lg' 
+                                             : 'bg-slate-50 border-transparent hover:border-indigo-600'
+                                       }`}
+                                    >
+                                       <div className="flex flex-col items-start">
+                                          <span className={`font-black text-xs uppercase ${selectedWinnerId === p.user_id ? 'text-white' : 'text-slate-900'}`}>{p.username}</span>
+                                          <Badge variant={p.team === 'red' ? 'default' : 'secondary'}>{p.team}</Badge>
+                                       </div>
+                                       <Trophy size={16} className={selectedWinnerId === p.user_id ? 'text-white' : 'text-slate-200 group-hover:text-indigo-600'} />
                                     </button>
                                  ))}
                                  {minigameParticipants.filter(p => p.minigame_id === editingMinigame.id).length === 0 && (
                                     <p className="text-center py-8 text-xs font-bold text-slate-300 italic">No one joined this event.</p>
                                  )}
-                                 <button onClick={()=>handleMinigameAction('finish', { id: editingMinigame.id, winner_id: null })} className="w-full py-3 text-[9px] font-black uppercase text-slate-400 border border-dashed rounded-xl mt-4">Close without winner</button>
+                                 
+                                 <button 
+                                    onClick={()=>setSelectedWinnerId('none')} 
+                                    className={`w-full py-3 text-[9px] font-black uppercase border border-dashed rounded-xl mt-4 transition-all ${
+                                       selectedWinnerId === 'none' ? 'bg-slate-900 text-white border-slate-950' : 'text-slate-400 border-slate-200'
+                                    }`}
+                                 >
+                                    Close without winner
+                                 </button>
                               </div>
                            </div>
-                           <button onClick={()=>setEditingMinigame(null)} className="w-full py-3 bg-slate-900 text-white rounded-xl font-black uppercase text-[9px]">Cancel</button>
+                           
+                           <div className="flex gap-2 pt-4">
+                              <button 
+                                 disabled={!selectedWinnerId || minigameLoading}
+                                 onClick={() => {
+                                    handleMinigameAction('finish', { 
+                                       id: editingMinigame.id, 
+                                       winner_id: selectedWinnerId === 'none' ? null : selectedWinnerId 
+                                    });
+                                    setSelectedWinnerId(null);
+                                 }}
+                                 className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-black uppercase text-[10px] shadow-lg disabled:opacity-50 disabled:grayscale transition-all"
+                              >
+                                 Confirm & Finalize
+                              </button>
+                              <button 
+                                 onClick={()=>{ setEditingMinigame(null); setSelectedWinnerId(null); }} 
+                                 className="flex-1 bg-slate-200 text-slate-600 py-3 rounded-xl font-black uppercase text-[10px]"
+                              >
+                                 Cancel
+                              </button>
+                           </div>
                         </div>
                      ) : (
                         <form onSubmit={(e)=>{
