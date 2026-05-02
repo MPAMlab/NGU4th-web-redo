@@ -47,6 +47,13 @@ export const onRequest: PagesFunction<{
       if (action === 'grant') {
         await env.DB.prepare("INSERT OR IGNORE INTO ngu4th_user_achievements (kinde_id, achievement_id) VALUES (?, ?)")
           .bind(targetKindeId, achievementId).run();
+      } else if (action === 'grant_all') {
+        const members = await env.DB.prepare("SELECT kinde_id FROM ngu4th_members").all();
+        const statements = members.results.map(m => 
+          env.DB.prepare("INSERT OR IGNORE INTO ngu4th_user_achievements (kinde_id, achievement_id) VALUES (?, ?)")
+            .bind(m.kinde_id, achievementId)
+        );
+        await env.DB.batch(statements);
       } else if (action === 'revoke') {
         if (instanceId) {
           await env.DB.prepare("DELETE FROM ngu4th_user_achievements WHERE id = ?").bind(instanceId).run();
