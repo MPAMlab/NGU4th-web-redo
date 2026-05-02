@@ -70,6 +70,14 @@ export const onRequest: PagesFunction<{
       } else if (action === 'start') {
         await env.DB.prepare("UPDATE ngu4th_minigames SET status = 'active' WHERE id = ?").bind(id).run();
       } else if (action === 'finish') {
+        // 0. Check if already finished to prevent duplicate rewards
+        const game: any = await env.DB.prepare("SELECT status, fake_card_id FROM ngu4th_minigames WHERE id = ?").bind(id).first();
+        if (!game || game.status === 'finished') {
+          return new Response(JSON.stringify({ success: true, message: "Already finished" }), {
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+
         // 1. Update game status and winner
         await env.DB.prepare("UPDATE ngu4th_minigames SET status = 'finished', winner_id = ? WHERE id = ?")
           .bind(winner_id || null, id).run();
@@ -77,10 +85,9 @@ export const onRequest: PagesFunction<{
         // 2. If winner exists, grant rewards
         if (winner_id) {
           const winner: any = await env.DB.prepare("SELECT team FROM ngu4th_members WHERE kinde_id = ?").bind(winner_id).first();
-          const game: any = await env.DB.prepare("SELECT fake_card_id FROM ngu4th_minigames WHERE id = ?").bind(id).first();
           
           // Grant Card
-          if (winner?.team && game?.fake_card_id) {
+          if (winner?.team && game.fake_card_id) {
             await env.DB.prepare("INSERT INTO ngu4th_inventory (card_id, owner_type, owner_id) VALUES (?, 'team', ?)")
               .bind(game.fake_card_id, winner.team).run();
           }

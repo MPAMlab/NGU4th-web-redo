@@ -128,6 +128,7 @@ export const AdminDashboard = () => {
   const [editingTplId, setEditingTplId] = useState<number | null>(null);
   const [editTplForm, setEditTplForm] = useState<Partial<Achievement>>({});
   const [editingMinigame, setEditingMinigame] = useState<any | null>(null);
+  const [minigameLoading, setMinigameLoading] = useState(false);
 
   const [libraryFilter, setLibraryFilter] = useState<'all' | 'joker' | 'tarot' | 'fake'>('all');
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
@@ -195,12 +196,18 @@ export const AdminDashboard = () => {
   const switchTab = (tab: any) => { setActiveTab(tab); fetchData(true); };
 
   const handleMinigameAction = async (action: string, payload: any) => {
-    const res = await fetch('/api/admin/minigames', { 
-       method: 'POST', 
-       headers: { 'Content-Type': 'application/json' }, 
-       body: JSON.stringify({ action, ...payload }) 
-    });
-    if (res.ok) { setEditingMinigame(null); fetchData(true); }
+    if (minigameLoading) return;
+    setMinigameLoading(true);
+    try {
+      const res = await fetch('/api/admin/minigames', { 
+         method: 'POST', 
+         headers: { 'Content-Type': 'application/json' }, 
+         body: JSON.stringify({ action, ...payload }) 
+      });
+      if (res.ok) { setEditingMinigame(null); fetchData(true); }
+    } finally {
+      setMinigameLoading(false);
+    }
   };
 
   const handleAchievementAction = async (action: string, payload: any) => {
