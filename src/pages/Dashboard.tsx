@@ -626,7 +626,7 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
                       <div className="relative group cursor-pointer shrink-0" onClick={() => document.getElementById('avatar-input')?.click()}>
                          <div className="w-20 h-20 md:w-32 md:h-32 rounded-2xl md:rounded-[2.5rem] bg-slate-800 border-2 md:border-4 border-white/10 overflow-hidden shadow-xl transition-all group-hover:scale-105 group-hover:border-indigo-500/50">
                             {user.avatar_url && user.avatar_url.trim() !== "" ? (
-                               <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" crossOrigin="anonymous" />
+                               <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
                                <div className="w-full h-full flex items-center justify-center text-slate-500"><User size={40} className="w-[40px] h-[40px] md:w-12 md:h-12" /></div>
                             )}
