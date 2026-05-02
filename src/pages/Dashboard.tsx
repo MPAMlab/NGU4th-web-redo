@@ -207,7 +207,6 @@ export const DashboardPage = ({ user: initialUser, achievements, activeGame, con
       const dataUrl = await toPng(profileRef.current, {
         cacheBust: true,
         width: 800,
-        height: 1200,
         style: {
           display: 'block',
         }
