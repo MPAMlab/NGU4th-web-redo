@@ -54,7 +54,7 @@ export const onRequest: PagesFunction<{
 
     if (request.method === "POST") {
       const body = await request.json() as any;
-      const { action, id, title, short_desc, detailed_desc, start_date, start_time, max_players, fake_card_id, winner_id } = body;
+      const { action, id, title, short_desc, detailed_desc, start_date, start_time, max_players, fake_card_id, achievement_id, winner_id } = body;
       
       // Helper to handle empty strings/undefined for numbers/references
       const cleanInt = (val: any) => (val === "" || val === undefined || val === null) ? null : parseInt(val);
@@ -62,8 +62,8 @@ export const onRequest: PagesFunction<{
 
       if (action === 'create') {
         await env.DB.prepare(`
-          INSERT INTO ngu4th_minigames (title, short_desc, detailed_desc, start_date, start_time, max_players, fake_card_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO ngu4th_minigames (title, short_desc, detailed_desc, start_date, start_time, max_players, fake_card_id, achievement_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           title, 
           cleanStr(short_desc), 
@@ -71,12 +71,13 @@ export const onRequest: PagesFunction<{
           cleanStr(start_date), 
           cleanStr(start_time), 
           cleanInt(max_players), 
-          cleanInt(fake_card_id)
+          cleanInt(fake_card_id),
+          cleanInt(achievement_id)
         ).run();
       } else if (action === 'update') {
         await env.DB.prepare(`
           UPDATE ngu4th_minigames 
-          SET title = ?, short_desc = ?, detailed_desc = ?, start_date = ?, start_time = ?, max_players = ?, fake_card_id = ?
+          SET title = ?, short_desc = ?, detailed_desc = ?, start_date = ?, start_time = ?, max_players = ?, fake_card_id = ?, achievement_id = ?
           WHERE id = ?
         `).bind(
           title, 
@@ -85,7 +86,8 @@ export const onRequest: PagesFunction<{
           cleanStr(start_date), 
           cleanStr(start_time), 
           cleanInt(max_players), 
-          cleanInt(fake_card_id), 
+          cleanInt(fake_card_id),
+          cleanInt(achievement_id),
           id
         ).run();
       } else if (action === 'start') {
