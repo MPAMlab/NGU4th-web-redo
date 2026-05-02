@@ -56,23 +56,46 @@ export const onRequest: PagesFunction<{
       const body = await request.json() as any;
       const { action, id, title, short_desc, detailed_desc, start_date, start_time, max_players, fake_card_id, winner_id } = body;
       
+      // Helper to handle empty strings/undefined for numbers/references
+      const cleanInt = (val: any) => (val === "" || val === undefined || val === null) ? null : parseInt(val);
+      const cleanStr = (val: any) => (val === "" || val === undefined) ? null : val;
+
       if (action === 'create') {
         await env.DB.prepare(`
           INSERT INTO ngu4th_minigames (title, short_desc, detailed_desc, start_date, start_time, max_players, fake_card_id)
           VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).bind(title, short_desc, detailed_desc, start_date, start_time, max_players, fake_card_id).run();
+        `).bind(
+          title, 
+          cleanStr(short_desc), 
+          cleanStr(detailed_desc), 
+          cleanStr(start_date), 
+          cleanStr(start_time), 
+          cleanInt(max_players), 
+          cleanInt(fake_card_id)
+        ).run();
       } else if (action === 'update') {
         await env.DB.prepare(`
           UPDATE ngu4th_minigames 
           SET title = ?, short_desc = ?, detailed_desc = ?, start_date = ?, start_time = ?, max_players = ?, fake_card_id = ?
           WHERE id = ?
-        `).bind(title, short_desc, detailed_desc, start_date, start_time, max_players, fake_card_id, id).run();
+        `).bind(
+          title, 
+          cleanStr(short_desc), 
+          cleanStr(detailed_desc), 
+          cleanStr(start_date), 
+          cleanStr(start_time), 
+          cleanInt(max_players), 
+          cleanInt(fake_card_id), 
+          id
+        ).run();
       } else if (action === 'start') {
         await env.DB.prepare("UPDATE ngu4th_minigames SET status = 'active' WHERE id = ?").bind(id).run();
       } else if (action === 'finish') {
         // 0. Check if already finished to prevent duplicate rewards
         const game: any = await env.DB.prepare("SELECT status, fake_card_id FROM ngu4th_minigames WHERE id = ?").bind(id).first();
-        if (!game || game.status === 'finished') {
+        if (!game) return new Response(JSON.stringify({ error: "Game not found" }), { status: 404 });
+        
+        if (game.status === 'finished') {
           return new Response(JSON.stringify({ success: true, message: "Already finished" }), {
             headers: { "Content-Type": "application/json" }
           });
@@ -80,10 +103,10 @@ export const onRequest: PagesFunction<{
 
         // 1. Update game status and winner
         await env.DB.prepare("UPDATE ngu4th_minigames SET status = 'finished', winner_id = ? WHERE id = ?")
-          .bind(winner_id || null, id).run();
+          .bind(cleanStr(winner_id), id).run();
 
         // 2. If winner exists, grant rewards
-        if (winner_id) {
+        if (winner_id && winner_id !== "") {
           const winner: any = await env.DB.prepare("SELECT team FROM ngu4th_members WHERE kinde_id = ?").bind(winner_id).first();
           
           // Grant Card
@@ -92,8 +115,13 @@ export const onRequest: PagesFunction<{
               .bind(game.fake_card_id, winner.team).run();
           }
 
-          // Trigger general minigame_win check (which covers achievements linked via triggers)
-          await checkAchievements(env.DB, winner_id, { type: 'minigame_win', minigameId: id });
+          // Trigger general minigame_win check
+          try {
+            await checkAchievements(env.DB, winner_id, { type: 'minigame_win', minigameId: id });
+          } catch (achErr) {
+            console.error("Achievement trigger failed:", achErr);
+            // Don't fail the whole request if only achievement fails
+          }
         }
       } else if (action === 'delete') {
         await env.DB.prepare("DELETE FROM ngu4th_minigame_participants WHERE minigame_id = ?").bind(id).run();
