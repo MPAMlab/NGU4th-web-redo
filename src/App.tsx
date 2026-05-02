@@ -50,17 +50,15 @@ function App() {
         // Check for new achievements to toast
         const fresh = authData.achievements.filter((a: any) => a.is_earned && !prevAchievementIds.current.has(a.id));
         if (fresh.length > 0) setNewAchievements(prev => [...prev, ...fresh]);
-        }
 
         // Update tracking set with currently earned achievements
         authData.achievements
-        .filter((a: any) => a.is_earned)
-        .forEach((a: Achievement) => prevAchievementIds.current.add(a.id));
+          .filter((a: any) => a.is_earned)
+          .forEach((a: Achievement) => prevAchievementIds.current.add(a.id));
 
         setAuth(authData);
-        } else {
-          setAuth(null);
-        }
+      } else {
+        setAuth(null);
       }
 
       if (sysRes.ok) {
