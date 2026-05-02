@@ -11,7 +11,10 @@ export const onRequest: PagesFunction<{
   let userId: string;
   try {
     const payloadPart = idToken.split(".")[1];
-    const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+    let base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4 !== 0) {
+      base64 += '=';
+    }
     const payload = JSON.parse(atob(base64));
     userId = payload.sub;
   } catch (e) {

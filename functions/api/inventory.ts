@@ -8,7 +8,12 @@ export const onRequest: PagesFunction<{
   const idToken = match[1];
   let kindeId: string;
   try {
-    const payload = JSON.parse(atob(idToken.split(".")[1]));
+    const payloadPart = idToken.split(".")[1];
+    let base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4 !== 0) {
+      base64 += '=';
+    }
+    const payload = JSON.parse(atob(base64));
     kindeId = payload.sub;
   } catch (e) {
     return new Response("Invalid token", { status: 401 });
